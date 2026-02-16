@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import Inter font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    /* Primark Brand Colors */
+    --primark-blue: #0DAADB;
+    --primark-navy: #1A1F36;
+    --primark-light-blue: #E5F6FC;
+    --primark-red: #DC2626;
+    --primark-green: #10B981;
+    --primark-amber: #F59E0B;
+    --primark-grey: #6B7280;
+    --primark-light-grey: #F3F4F6;
+  }
+
+  * {
+    @apply border-primark-grey/20;
+  }
+
+  body {
+    @apply bg-white text-primark-navy font-sans;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  /* Touch-friendly sizing */
+  button, a, [role="button"] {
+    @apply min-h-[48px] px-4;
+  }
+}
+
+@layer components {
+  /* Primary button */
+  .btn-primary {
+    @apply bg-primark-blue text-white font-semibold rounded-lg shadow-md hover:bg-primark-blue/90 active:scale-95 transition-all duration-150;
+  }
+
+  /* Secondary button */
+  .btn-secondary {
+    @apply bg-primark-navy text-white font-semibold rounded-lg shadow-md hover:bg-primark-navy/90 active:scale-95 transition-all duration-150;
+  }
+
+  /* Danger button */
+  .btn-danger {
+    @apply bg-primark-red text-white font-semibold rounded-lg shadow-md hover:bg-primark-red/90 active:scale-95 transition-all duration-150;
+  }
+
+  /* Success button */
+  .btn-success {
+    @apply bg-primark-green text-white font-semibold rounded-lg shadow-md hover:bg-primark-green/90 active:scale-95 transition-all duration-150;
+  }
+
+  /* Outline button */
+  .btn-outline {
+    @apply border-2 border-primark-blue text-primark-blue font-semibold rounded-lg hover:bg-primark-light-blue active:scale-95 transition-all duration-150;
+  }
+
+  /* Card */
+  .card {
+    @apply bg-white rounded-lg shadow-md p-4;
+  }
+
+  /* Input */
+  .input {
+    @apply w-full px-4 py-3 border-2 border-primark-grey/30 rounded-lg focus:outline-none focus:border-primark-blue focus:ring-2 focus:ring-primark-blue/20;
+  }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+  }
+
+  .badge-blue {
+    @apply bg-primark-light-blue text-primark-blue;
+  }
+
+  .badge-green {
+    @apply bg-green-100 text-green-800;
+  }
+
+  .badge-red {
+    @apply bg-red-100 text-red-800;
+  }
+
+  .badge-amber {
+    @apply bg-amber-100 text-amber-800;
+  }
+
+  .badge-grey {
+    @apply bg-primark-light-grey text-primark-grey;
+  }
+}
+
+@layer utilities {
+  /* Animation utilities */
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Custom scrollbar */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    @apply bg-primark-light-grey;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-primark-grey/40 rounded-full;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    @apply bg-primark-grey/60;
+  }
+}
