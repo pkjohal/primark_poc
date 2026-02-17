@@ -65,16 +65,17 @@ export function useSessions() {
     if (!store) return null;
 
     try {
-      // Check for duplicate open tag
+      // Check for duplicate open tag in this store only
       const { data: existing } = await supabase
         .from('sessions')
         .select('id')
+        .eq('store_id', store.id)
         .eq('tag_barcode', tagBarcode)
         .in('status', ['in_progress', 'exiting'])
         .single();
 
       if (existing) {
-        throw new Error('This tag already has an open session');
+        throw new Error('This tag already has an open session in this store');
       }
 
       const { data, error: createError } = await supabase
