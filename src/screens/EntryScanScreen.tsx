@@ -60,11 +60,11 @@ export default function EntryScanScreen() {
 
     try {
       const item = await addSessionItem(sessionId, barcode);
-      setItems([...items, item]);
+      setItems(prevItems => [...prevItems, item]);
     } catch (err: any) {
       setError(err.message || 'Failed to add item');
     }
-  }, { debounceTime: 500 }); // Allow duplicate scans after 500ms
+  }, { debounceTime: 2000 }); // Prevent duplicate scans for 2 seconds
 
   const handleManualEntry = async () => {
     const barcode = manualEntry.trim().toUpperCase();
@@ -91,7 +91,7 @@ export default function EntryScanScreen() {
   const handleRemoveItem = async (itemId: string) => {
     try {
       await removeSessionItem(itemId);
-      setItems(items.filter((item) => item.id !== itemId));
+      setItems(prevItems => prevItems.filter((item) => item.id !== itemId));
     } catch (err: any) {
       setError(err.message || 'Failed to remove item');
     }
