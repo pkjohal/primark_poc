@@ -15,7 +15,7 @@ import { useBarcodeScan } from '@/hooks/useBarcodeScan';
 import { SessionItem } from '@/lib/types';
 import { isValidBarcode } from '@/lib/utils';
 
-type Step = 'scan_tag' | 'scan_items';
+type Step = 'scan_tag' | 'scan_items' | 'complete';
 
 export default function EntryScanScreen() {
   const navigate = useNavigate();
@@ -128,7 +128,7 @@ export default function EntryScanScreen() {
         total_items_in: items.length,
       });
 
-      navigate('/', { replace: true });
+      setStep('complete');
     } catch (err: any) {
       setError(err.message || 'Failed to complete entry');
     } finally {
@@ -141,6 +141,30 @@ export default function EntryScanScreen() {
       navigate('/', { replace: true });
     }
   };
+
+  // Confirmation screen after completion
+  if (step === 'complete') {
+    return (
+      <div className="min-h-screen flex flex-col bg-primark-green">
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="text-center text-white max-w-md">
+            <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-6">
+              <Check size={64} className="text-primark-green" />
+            </div>
+            <h1 className="text-3xl font-bold mb-4">Session {tagBarcode} started with {items.length} item{items.length !== 1 ? 's' : ''}</h1>
+            <Button
+              onClick={() => navigate('/', { replace: true })}
+              variant="primary"
+              size="lg"
+              className="bg-primark-green border-white border border-2 hover:bg-primark-green/80"
+            >
+              Back to Home
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-primark-light-grey">
