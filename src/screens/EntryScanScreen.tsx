@@ -20,7 +20,7 @@ type Step = 'scan_tag' | 'scan_items' | 'complete';
 export default function EntryScanScreen() {
   const navigate = useNavigate();
   const { teamMember } = useAuth();
-  const { createSession, updateSession } = useSessions();
+  const { createSession, updateSession, deleteSession } = useSessions();
   const { addSessionItem, removeSessionItem, getSessionItems } = useSessionItems();
 
   const [step, setStep] = useState<Step>('scan_tag');
@@ -136,10 +136,21 @@ export default function EntryScanScreen() {
     }
   };
 
-  const handleCancel = () => {
-    if (confirm('Are you sure you want to cancel? This session will be discarded.')) {
-      navigate('/', { replace: true });
+  const handleCancel = async () => {
+    if (!confirm('Are you sure you want to cancel? This session will be discarded.')) {
+      return;
     }
+
+    // Delete the session if one was created
+    if (sessionId) {
+      try {
+        await deleteSession(sessionId);
+      } catch (err: any) {
+        console.error('Error deleting session:', err);
+      }
+    }
+
+    navigate('/', { replace: true });
   };
 
   // Confirmation screen after completion

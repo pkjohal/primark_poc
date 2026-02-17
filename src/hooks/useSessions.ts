@@ -155,6 +155,21 @@ export function useSessions() {
     }
   };
 
+  const deleteSession = async (sessionId: string) => {
+    try {
+      const { error: deleteError } = await supabase
+        .from('sessions')
+        .delete()
+        .eq('id', sessionId);
+
+      if (deleteError) throw deleteError;
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error deleting session:', err);
+      throw err;
+    }
+  };
+
   const completeSession = async (sessionId: string, status: 'complete' | 'flagged') => {
     return updateSession(sessionId, {
       status,
@@ -175,6 +190,7 @@ export function useSessions() {
     fetchSessions,
     createSession,
     updateSession,
+    deleteSession,
     getSessionByTag,
     getSessionById,
     completeSession,
