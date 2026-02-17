@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { Store, TeamMember } from '@/lib/types';
 import PinPad from '@/components/ui/PinPad';
-import { AlertCircle, Store as StoreIcon } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 
 export default function LoginScreen() {
   const navigate = useNavigate();
@@ -119,11 +119,8 @@ export default function LoginScreen() {
       <div className="w-full max-w-md">
         {/* Logo/Header */}
         <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <StoreIcon size={40} className="text-primark-blue" />
-          </div>
-          <h1 className="text-3xl font-bold text-white mb-2">Primark</h1>
-          <p className="text-white/80">Changing Room Tracker</p>
+          <h1 className="text-7xl font-primark text-primark-blue mb-4 tracking-wide">PRIMARK</h1>
+          <p className="text-white text-lg font-light">Changing Room Tracker</p>
         </div>
 
         {/* Login Card */}
