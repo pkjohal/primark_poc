@@ -99,7 +99,13 @@ export function isSessionStale(entryTime: string | Date): boolean {
   return hours > 4;
 }
 
-// Validate barcode format (basic validation)
+// Validate tag format (3 digits OR 4+ alphanumeric)
+export function isValidTag(tag: string): boolean {
+  // Allow 3-digit tags (e.g., 001, 042) OR 4+ alphanumeric
+  return /^\d{3}$/.test(tag) || /^[A-Z0-9]{4,}$/i.test(tag);
+}
+
+// Validate item barcode format (4+ alphanumeric characters)
 export function isValidBarcode(barcode: string): boolean {
   // Allow alphanumeric barcodes with minimum length of 4
   return /^[A-Z0-9]{4,}$/i.test(barcode);

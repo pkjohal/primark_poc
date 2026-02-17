@@ -13,7 +13,7 @@ import { useSessions } from '@/hooks/useSessions';
 import { useSessionItems } from '@/hooks/useSessionItems';
 import { useBarcodeScan } from '@/hooks/useBarcodeScan';
 import { SessionItem } from '@/lib/types';
-import { isValidBarcode } from '@/lib/utils';
+import { isValidBarcode, isValidTag } from '@/lib/utils';
 
 type Step = 'scan_tag' | 'scan_items' | 'complete';
 
@@ -92,14 +92,18 @@ export default function EntryScanScreen() {
       return;
     }
 
-    if (!isValidBarcode(barcode)) {
-      setError('Invalid barcode format');
-      return;
-    }
-
+    // Use different validation for tags vs items
     if (step === 'scan_tag') {
+      if (!isValidTag(barcode)) {
+        setError('Invalid tag format (3 digits like 001, or 4+ characters)');
+        return;
+      }
       handleTagScan.handleScan(barcode);
     } else {
+      if (!isValidBarcode(barcode)) {
+        setError('Invalid barcode format');
+        return;
+      }
       handleItemScan.handleScan(barcode);
     }
 
