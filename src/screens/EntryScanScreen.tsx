@@ -27,6 +27,7 @@ export default function EntryScanScreen() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [tagBarcode, setTagBarcode] = useState<string | null>(null);
   const [items, setItems] = useState<SessionItem[]>([]);
+  const [scannedBarcode, setScannedBarcode] = useState<string | null>(null);
   const [manualEntry, setManualEntry] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -75,14 +76,29 @@ export default function EntryScanScreen() {
     if (!sessionId) return;
 
     setError(null);
+    // Show confirmation popup
+    setScannedBarcode(barcode);
+  }, { debounceTime: 2000 }); // Prevent duplicate scans for 2 seconds
 
+  const handleConfirmAdd = async () => {
+    if (!sessionId || !scannedBarcode) return;
+
+    setLoading(true);
     try {
-      const item = await addSessionItem(sessionId, barcode);
+      const item = await addSessionItem(sessionId, scannedBarcode);
       setItems(prevItems => [...prevItems, item]);
+      setScannedBarcode(null);
     } catch (err: any) {
       setError(err.message || 'Failed to add item');
+    } finally {
+      setLoading(false);
     }
-  }, { debounceTime: 5000 }); // Prevent duplicate scans for 5 seconds
+  };
+
+  const handleCancelAdd = () => {
+    setScannedBarcode(null);
+    setError(null);
+  };
 
   const handleManualEntry = async () => {
     const barcode = manualEntry.trim().toUpperCase();
@@ -196,11 +212,41 @@ export default function EntryScanScreen() {
       />
 
       <div className="flex-1 max-w-3xl mx-auto w-full p-4 space-y-4">
+        {/* Confirmation popup for scanned item */}
+        {step === 'scan_items' && scannedBarcode && (
+          <div className="card bg-primark-light-blue border-2 border-primark-blue">
+            <h3 className="text-lg font-bold text-primark-navy mb-3">Add This Item?</h3>
+            <p className="text-2xl font-mono font-bold text-primark-navy mb-4">
+              {scannedBarcode}
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                onClick={handleCancelAdd}
+                variant="outline"
+                size="lg"
+                disabled={loading}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirmAdd}
+                variant="success"
+                size="lg"
+                isLoading={loading}
+                className="inline-flex items-center justify-center gap-2"
+              >
+                <Check size={20} />
+                Add Item
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Scanner */}
         <div className="card">
           <BarcodeScanner
             onScan={step === 'scan_tag' ? handleTagScan.handleScan : handleItemScan.handleScan}
-            isActive={!loading}
+            isActive={!loading && !scannedBarcode}
           />
 
           {/* Manual entry */}
@@ -212,12 +258,12 @@ export default function EntryScanScreen() {
               onKeyPress={(e) => e.key === 'Enter' && handleManualEntry()}
               placeholder={step === 'scan_tag' ? 'Enter tag barcode' : 'Enter item barcode'}
               className="input"
-              disabled={loading}
+              disabled={loading || !!scannedBarcode}
             />
             <Button
               onClick={handleManualEntry}
               variant="outline"
-              disabled={loading}
+              disabled={loading || !!scannedBarcode}
               className="px-6 flex items-center justify-center gap-2"
             >
               <Keyboard size={20} />
