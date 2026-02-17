@@ -13,7 +13,7 @@ import { useSessions } from '@/hooks/useSessions';
 import { useSessionItems } from '@/hooks/useSessionItems';
 import { useBarcodeScan } from '@/hooks/useBarcodeScan';
 import { SessionItem } from '@/lib/types';
-import { isValidBarcode } from '@/lib/utils';
+import { isValidBarcode, isValidTag } from '@/lib/utils';
 
 type Step = 'scan_tag' | 'scan_items' | 'complete';
 
@@ -27,6 +27,7 @@ export default function EntryScanScreen() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [tagBarcode, setTagBarcode] = useState<string | null>(null);
   const [items, setItems] = useState<SessionItem[]>([]);
+  const [scannedBarcode, setScannedBarcode] = useState<string | null>(null);
   const [manualEntry, setManualEntry] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -75,14 +76,29 @@ export default function EntryScanScreen() {
     if (!sessionId) return;
 
     setError(null);
+    // Show confirmation popup
+    setScannedBarcode(barcode);
+  }, { debounceTime: 2000 }); // Prevent duplicate scans for 2 seconds
 
+  const handleConfirmAdd = async () => {
+    if (!sessionId || !scannedBarcode) return;
+
+    setLoading(true);
     try {
-      const item = await addSessionItem(sessionId, barcode);
+      const item = await addSessionItem(sessionId, scannedBarcode);
       setItems(prevItems => [...prevItems, item]);
+      setScannedBarcode(null);
     } catch (err: any) {
       setError(err.message || 'Failed to add item');
+    } finally {
+      setLoading(false);
     }
-  }, { debounceTime: 5000 }); // Prevent duplicate scans for 5 seconds
+  };
+
+  const handleCancelAdd = () => {
+    setScannedBarcode(null);
+    setError(null);
+  };
 
   const handleManualEntry = async () => {
     const barcode = manualEntry.trim().toUpperCase();
@@ -92,14 +108,18 @@ export default function EntryScanScreen() {
       return;
     }
 
-    if (!isValidBarcode(barcode)) {
-      setError('Invalid barcode format');
-      return;
-    }
-
+    // Use different validation for tags vs items
     if (step === 'scan_tag') {
+      if (!isValidTag(barcode)) {
+        setError('Invalid tag format (3 digits like 001, or 4+ characters)');
+        return;
+      }
       handleTagScan.handleScan(barcode);
     } else {
+      if (!isValidBarcode(barcode)) {
+        setError('Invalid barcode format');
+        return;
+      }
       handleItemScan.handleScan(barcode);
     }
 
@@ -196,7 +216,7 @@ export default function EntryScanScreen() {
         <div className="card">
           <BarcodeScanner
             onScan={step === 'scan_tag' ? handleTagScan.handleScan : handleItemScan.handleScan}
-            isActive={!loading}
+            isActive={!loading && !scannedBarcode}
           />
 
           {/* Manual entry */}
@@ -208,16 +228,16 @@ export default function EntryScanScreen() {
               onKeyPress={(e) => e.key === 'Enter' && handleManualEntry()}
               placeholder={step === 'scan_tag' ? 'Enter tag barcode' : 'Enter item barcode'}
               className="input"
-              disabled={loading}
+              disabled={loading || !!scannedBarcode}
             />
             <Button
               onClick={handleManualEntry}
               variant="outline"
-              disabled={loading}
+              disabled={loading || !!scannedBarcode}
               className="px-6 flex items-center justify-center gap-2"
             >
               <Keyboard size={20} />
-              Add
+              Enter
             </Button>
           </div>
 
@@ -226,7 +246,34 @@ export default function EntryScanScreen() {
               {error}
             </div>
           )}
+          
         </div>
+
+        {step === 'scan_items' && scannedBarcode && (
+          <div className="card bg-primark-light-blue border-2 border-primark-blue">
+            <div className="flex items-center gap-3">
+              <h3 className="text-lg font-bold text-primark-navy flex-1">Add {scannedBarcode}</h3>
+              <Button
+                onClick={handleCancelAdd}
+                variant="outline"
+                size="md"
+                disabled={loading}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirmAdd}
+                variant="success"
+                size="md"
+                isLoading={loading}
+                className="inline-flex items-center justify-center gap-2"
+              >
+                <Check size={20} />
+                Add Item
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Items list (only show in step 2) */}
         {step === 'scan_items' && (
