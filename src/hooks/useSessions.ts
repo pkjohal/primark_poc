@@ -24,7 +24,11 @@ export function useSessions() {
     try {
       let query = supabase
         .from('sessions')
-        .select('*, team_member:team_members(*)')
+        .select(`
+          *,
+          team_member:team_members(*),
+          items:session_items(count)
+        `)
         .eq('store_id', store.id)
         .order('entry_time', { ascending: false });
 

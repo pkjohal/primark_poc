@@ -1,6 +1,6 @@
 // Entry scan screen with two-step process (tag then items)
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, Keyboard } from 'lucide-react';
 import NavBar from '@/components/layout/NavBar';
@@ -21,7 +21,7 @@ export default function EntryScanScreen() {
   const navigate = useNavigate();
   const { teamMember } = useAuth();
   const { createSession, updateSession } = useSessions();
-  const { addSessionItem, removeSessionItem } = useSessionItems();
+  const { addSessionItem, removeSessionItem, getSessionItems } = useSessionItems();
 
   const [step, setStep] = useState<Step>('scan_tag');
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -30,6 +30,24 @@ export default function EntryScanScreen() {
   const [manualEntry, setManualEntry] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Load existing items when session is set
+  useEffect(() => {
+    if (sessionId) {
+      loadSessionItems();
+    }
+  }, [sessionId]);
+
+  const loadSessionItems = async () => {
+    if (!sessionId) return;
+
+    try {
+      const sessionItems = await getSessionItems(sessionId);
+      setItems(sessionItems);
+    } catch (err: any) {
+      console.error('Error loading session items:', err);
+    }
+  };
 
   const handleTagScan = useBarcodeScan(async (barcode) => {
     if (!teamMember) return;

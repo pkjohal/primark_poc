@@ -166,7 +166,7 @@ export default function HomeScreen() {
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-medium text-primark-navy">
-                          {session.total_items_in} items
+                          {(session as any).items?.[0]?.count || 0} items
                         </p>
                         <p className="text-xs text-primark-grey">
                           {formatElapsedTime(session.entry_time)}
