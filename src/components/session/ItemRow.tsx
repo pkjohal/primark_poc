@@ -7,19 +7,29 @@ interface ItemRowProps {
   item: SessionItem;
   onRemove?: (itemId: string) => void;
   showRemove?: boolean;
+  duplicateCount?: number;
 }
 
-export default function ItemRow({ item, onRemove, showRemove = true }: ItemRowProps) {
+export default function ItemRow({ item, onRemove, showRemove = true, duplicateCount }: ItemRowProps) {
   return (
     <div className="flex items-center justify-between p-3 bg-primark-light-blue rounded-lg">
-      <div className="flex-1">
-        <p className="font-medium text-primark-navy">{item.item_barcode}</p>
-        <p className="text-xs text-primark-grey">
-          Scanned {new Date(item.scanned_in_at).toLocaleTimeString('en-GB', {
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
-        </p>
+      <div className="flex-1 flex items-center gap-3">
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <p className="font-medium text-primark-navy">{item.item_barcode}</p>
+            {duplicateCount && duplicateCount > 1 && (
+              <span className="inline-flex items-center justify-center min-w-[24px] h-6 px-2 bg-amber-500 opacity-50 text-xs font-bold rounded-full">
+                DUPLICATED ITEM
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-primark-grey">
+            Scanned {new Date(item.scanned_in_at).toLocaleTimeString('en-GB', {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </p>
+        </div>
       </div>
       {showRemove && onRemove && (
         <button

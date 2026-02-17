@@ -117,6 +117,15 @@ export default function ExitScanScreen() {
         return;
       }
 
+      // Count remaining unresolved items with same barcode
+      const unresolvedWithSameBarcode = items.filter(
+        (i) => i.item_barcode === barcode && i.status === 'in_room'
+      ).length;
+
+      if (unresolvedWithSameBarcode > 1) {
+        setError(`Note: ${unresolvedWithSameBarcode} items with barcode ${barcode} - scan again after resolving this one`);
+      }
+
       setCurrentItem(item);
     } catch (err: any) {
       setError(err.message);
@@ -245,12 +254,10 @@ export default function ExitScanScreen() {
         {step === 'scan_items' && (
           <div className="card">
             <ProgressBar current={resolvedCount} total={items.length} />
-            {resolvedCount === items.length && (
-              <Button onClick={handleAllDone} variant="success" className="w-full mt-4">
-                <Check size={20} className="mr-2" />
-                All Done
-              </Button>
-            )}
+            <Button onClick={handleAllDone} variant="success" className="w-full mt-4 inline-flex text-center items-center justify-center gap-2">
+              <Check size={20} className="mr-2" />
+              All Done
+            </Button>
           </div>
         )}
 
@@ -278,7 +285,11 @@ export default function ExitScanScreen() {
           </div>
 
           {error && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+            <div className={`mt-4 p-3 rounded-lg text-sm ${
+              error.startsWith('Note:')
+                ? 'bg-amber-50 border border-amber-200 text-amber-700'
+                : 'bg-red-50 border border-red-200 text-red-600'
+            }`}>
               {error}
             </div>
           )}
@@ -292,12 +303,12 @@ export default function ExitScanScreen() {
               {currentItem.item_barcode}
             </p>
             <div className="grid grid-cols-2 gap-3">
-              <Button onClick={handleRestock} variant="secondary" size="lg">
-                <Package size={24} className="mr-2" />
+              <Button onClick={handleRestock} variant="secondary" size="lg" className='inline-flex text-center items-center gap-6'>
+                <Package size={24}/>
                 RESTOCK
               </Button>
-              <Button onClick={handlePurchase} variant="success" size="lg">
-                <ShoppingCart size={24} className="mr-2" />
+              <Button onClick={handlePurchase} variant="success" size="lg" className='inline-flex text-center items-center gap-6'>
+                <ShoppingCart size={24} />
                 PURCHASE
               </Button>
             </div>

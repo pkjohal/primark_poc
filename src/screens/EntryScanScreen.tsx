@@ -64,7 +64,7 @@ export default function EntryScanScreen() {
     } catch (err: any) {
       setError(err.message || 'Failed to add item');
     }
-  });
+  }, { debounceTime: 500 }); // Allow duplicate scans after 500ms
 
   const handleManualEntry = async () => {
     const barcode = manualEntry.trim().toUpperCase();
@@ -161,9 +161,9 @@ export default function EntryScanScreen() {
               onClick={handleManualEntry}
               variant="outline"
               disabled={loading}
-              className="px-6"
+              className="px-6 flex items-center justify-center gap-2"
             >
-              <Keyboard size={20} className="mr-2" />
+              <Keyboard size={20} />
               Add
             </Button>
           </div>
@@ -188,8 +188,9 @@ export default function EntryScanScreen() {
                   variant="success"
                   size="md"
                   isLoading={loading}
+                  className='inline-flex text-center items-center gap-2'
                 >
-                  <Check size={20} className="mr-2" />
+                  <Check size={20} />
                   Done
                 </Button>
               )}
@@ -202,14 +203,22 @@ export default function EntryScanScreen() {
               </div>
             ) : (
               <div className="space-y-2 max-h-96 overflow-y-auto scrollbar-thin">
-                {items.map((item) => (
-                  <ItemRow
-                    key={item.id}
-                    item={item}
-                    onRemove={handleRemoveItem}
-                    showRemove={!loading}
-                  />
-                ))}
+                {items.map((item) => {
+                  // Count how many times this barcode appears
+                  const duplicateCount = items.filter(
+                    (i) => i.item_barcode === item.item_barcode
+                  ).length;
+
+                  return (
+                    <ItemRow
+                      key={item.id}
+                      item={item}
+                      onRemove={handleRemoveItem}
+                      showRemove={!loading}
+                      duplicateCount={duplicateCount}
+                    />
+                  );
+                })}
               </div>
             )}
           </div>
@@ -227,6 +236,7 @@ export default function EntryScanScreen() {
           ) : (
             <ul className="text-sm text-primark-grey space-y-1">
               <li>• Scan each item going into the changing room</li>
+              <li>• Multiple items with the same barcode will show a count badge</li>
               <li>• You can remove accidental scans by tapping the X</li>
               <li>• Tap DONE when all items are scanned</li>
               <li>• Manual entry is available if scanner has issues</li>

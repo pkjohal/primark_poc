@@ -12,7 +12,7 @@ export function useSessions() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchSessions = async (filters?: {
-    status?: Session['status'];
+    status?: Session['status'] | Session['status'][];
     dateFrom?: Date;
     dateTo?: Date;
   }) => {
@@ -29,7 +29,11 @@ export function useSessions() {
         .order('entry_time', { ascending: false });
 
       if (filters?.status) {
-        query = query.eq('status', filters.status);
+        if (Array.isArray(filters.status)) {
+          query = query.in('status', filters.status);
+        } else {
+          query = query.eq('status', filters.status);
+        }
       }
 
       if (filters?.dateFrom) {

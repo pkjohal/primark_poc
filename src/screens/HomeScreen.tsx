@@ -38,7 +38,7 @@ export default function HomeScreen() {
       itemsLost: statsData.itemsLost,
       backOfHouseCount: statsData.backOfHouseCount,
     });
-    await fetchSessions({ status: 'in_progress' });
+    await fetchSessions({ status: ['in_progress', 'exiting'] });
     setLoading(false);
   };
 
@@ -50,9 +50,8 @@ export default function HomeScreen() {
     navigate('/exit');
   };
 
-  const activeSessions = sessions.filter(
-    (session) => session.status === 'in_progress' || session.status === 'exiting'
-  );
+  // Sessions are already filtered by fetchSessions call
+  const activeSessions = sessions;
 
   if (loading) {
     return (

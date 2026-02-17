@@ -3,12 +3,16 @@
 import { useState, useCallback } from 'react';
 import { playBeep } from '@/lib/utils';
 
-export function useBarcodeScan(onScan: (barcode: string) => void) {
+interface UseBarcodeScanOptions {
+  debounceTime?: number; // Time in ms to ignore duplicate scans (default: 2000ms)
+}
+
+export function useBarcodeScan(onScan: (barcode: string) => void, options?: UseBarcodeScanOptions) {
   const [lastScannedBarcode, setLastScannedBarcode] = useState<string | null>(null);
   const [lastScanTime, setLastScanTime] = useState<number>(0);
 
-  // Debounce duplicate scans within 2 seconds
-  const DEBOUNCE_TIME = 2000;
+  // Debounce duplicate scans (configurable, default 2 seconds)
+  const DEBOUNCE_TIME = options?.debounceTime ?? 2000;
 
   const handleScan = useCallback(
     (barcode: string) => {

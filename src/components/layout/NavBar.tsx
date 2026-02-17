@@ -19,8 +19,10 @@ export default function NavBar() {
     <nav className="bg-primark-navy text-white px-4 py-3 shadow-lg">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex-1">
-          <h1 className="text-lg font-bold">Primark Changing Room Tracker</h1>
-          <p className="text-xs text-white/70">{store?.store_name}</p>
+          <h1 className="text-2xl font-primark tracking-wide text-primark-blue">
+            PRIMARK
+          </h1>
+          <p className="text-sm text-white/90">{store?.store_name}</p>
         </div>
 
         <div className="flex items-center gap-4">
