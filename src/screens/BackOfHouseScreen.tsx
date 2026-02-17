@@ -162,7 +162,7 @@ export default function BackOfHouseScreen() {
                     onClick={() => handleMarkAsReturned(item.id)}
                     variant="success"
                     size="md"
-                    className="w-full"
+                    className="w-full flex items-center justify-center"
                   >
                     <CheckCircle size={20} className="mr-2" />
                     Returned to Floor
