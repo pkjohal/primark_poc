@@ -237,7 +237,7 @@ export default function EntryScanScreen() {
               className="px-6 flex items-center justify-center gap-2"
             >
               <Keyboard size={20} />
-              Add
+              Enter
             </Button>
           </div>
 
