@@ -124,17 +124,19 @@ export function useSessionItems() {
 
   const findItemByBarcode = async (sessionId: string, barcode: string) => {
     try {
+      // Get first unresolved item with this barcode (handles duplicates)
       const { data, error: fetchError } = await supabase
         .from('session_items')
         .select('*')
         .eq('session_id', sessionId)
         .eq('item_barcode', barcode)
         .eq('status', 'in_room')
-        .maybeSingle();
+        .order('scanned_in_at', { ascending: true })
+        .limit(1);
 
       if (fetchError) throw fetchError;
 
-      return data as SessionItem | null;
+      return data && data.length > 0 ? (data[0] as SessionItem) : null;
     } catch (err: any) {
       console.error('Error finding item by barcode:', err);
       return null;

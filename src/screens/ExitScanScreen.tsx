@@ -117,6 +117,15 @@ export default function ExitScanScreen() {
         return;
       }
 
+      // Count remaining unresolved items with same barcode
+      const unresolvedWithSameBarcode = items.filter(
+        (i) => i.item_barcode === barcode && i.status === 'in_room'
+      ).length;
+
+      if (unresolvedWithSameBarcode > 1) {
+        setError(`Note: ${unresolvedWithSameBarcode} items with barcode ${barcode} - scan again after resolving this one`);
+      }
+
       setCurrentItem(item);
     } catch (err: any) {
       setError(err.message);
@@ -278,7 +287,11 @@ export default function ExitScanScreen() {
           </div>
 
           {error && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+            <div className={`mt-4 p-3 rounded-lg text-sm ${
+              error.startsWith('Note:')
+                ? 'bg-amber-50 border border-amber-200 text-amber-700'
+                : 'bg-red-50 border border-red-200 text-red-600'
+            }`}>
               {error}
             </div>
           )}
