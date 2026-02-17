@@ -82,7 +82,7 @@ export default function EntryScanScreen() {
     } catch (err: any) {
       setError(err.message || 'Failed to add item');
     }
-  }, { debounceTime: 2000 }); // Prevent duplicate scans for 2 seconds
+  }, { debounceTime: 5000 }); // Prevent duplicate scans for 5 seconds
 
   const handleManualEntry = async () => {
     const barcode = manualEntry.trim().toUpperCase();
