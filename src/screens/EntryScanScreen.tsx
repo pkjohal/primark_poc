@@ -212,36 +212,6 @@ export default function EntryScanScreen() {
       />
 
       <div className="flex-1 max-w-3xl mx-auto w-full p-4 space-y-4">
-        {/* Confirmation popup for scanned item */}
-        {step === 'scan_items' && scannedBarcode && (
-          <div className="card bg-primark-light-blue border-2 border-primark-blue">
-            <h3 className="text-lg font-bold text-primark-navy mb-3">Add This Item?</h3>
-            <p className="text-2xl font-mono font-bold text-primark-navy mb-4">
-              {scannedBarcode}
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                onClick={handleCancelAdd}
-                variant="outline"
-                size="lg"
-                disabled={loading}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleConfirmAdd}
-                variant="success"
-                size="lg"
-                isLoading={loading}
-                className="inline-flex items-center justify-center gap-2"
-              >
-                <Check size={20} />
-                Add Item
-              </Button>
-            </div>
-          </div>
-        )}
-
         {/* Scanner */}
         <div className="card">
           <BarcodeScanner
@@ -276,7 +246,34 @@ export default function EntryScanScreen() {
               {error}
             </div>
           )}
+          
         </div>
+
+        {step === 'scan_items' && scannedBarcode && (
+          <div className="card bg-primark-light-blue border-2 border-primark-blue">
+            <div className="flex items-center gap-3">
+              <h3 className="text-lg font-bold text-primark-navy flex-1">Add {scannedBarcode}</h3>
+              <Button
+                onClick={handleCancelAdd}
+                variant="outline"
+                size="md"
+                disabled={loading}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleConfirmAdd}
+                variant="success"
+                size="md"
+                isLoading={loading}
+                className="inline-flex items-center justify-center gap-2"
+              >
+                <Check size={20} />
+                Add Item
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Items list (only show in step 2) */}
         {step === 'scan_items' && (
