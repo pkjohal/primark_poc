@@ -101,7 +101,6 @@ export default function DiscrepancyScreen() {
       if (!session) return;
 
       const purchased = session.total_items_in - unresolvedItems.length;
-      const restocked = session.items_restocked || 0;
       const lost = unresolvedItems.length;
 
       await updateSession(sessionId, {
