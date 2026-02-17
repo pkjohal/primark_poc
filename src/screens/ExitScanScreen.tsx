@@ -225,7 +225,7 @@ export default function ExitScanScreen() {
               onClick={() => navigate('/', { replace: true })}
               variant="primary"
               size="lg"
-              className="bg-white text-primark-green hover:bg-white/90"
+              className="bg-primark-green border-white border border-2 hover:bg-primark-green/80"
             >
               Back to Home
             </Button>
