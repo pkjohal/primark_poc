@@ -87,10 +87,15 @@ export default function HomeScreen() {
             onClick={handleExit}
             variant="secondary"
             size="xl"
+            disabled={activeSessions.length === 0}
             className="flex flex-col items-center justify-center py-8"
+            title={activeSessions.length === 0 ? 'No active sessions to exit' : 'Process customer exit'}
           >
             <ArrowUpCircle size={48} className="mb-2" />
             <span className="text-2xl font-bold">EXIT</span>
+            {activeSessions.length === 0 && (
+              <span className="text-xs mt-1 opacity-70">No active sessions</span>
+            )}
           </Button>
         </div>
 

@@ -7,6 +7,7 @@ import BottomNav from '@/components/layout/BottomNav';
 import PageHeader from '@/components/layout/PageHeader';
 import Button from '@/components/ui/Button';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import AlertDialog from '@/components/ui/AlertDialog';
 import { supabase } from '@/lib/supabase';
 import { Store, TeamMember } from '@/lib/types';
 import { formatDate } from '@/lib/utils';
@@ -23,6 +24,7 @@ export default function AdminScreen() {
   const [editingUser, setEditingUser] = useState<TeamMember | null>(null);
   const [editingStore, setEditingStore] = useState<Store | null>(null);
   const [toggleTarget, setToggleTarget] = useState<{ type: 'user' | 'store'; id: string; currentStatus: boolean } | null>(null);
+  const [alert, setAlert] = useState<{ title: string; message: string; variant: 'success' | 'error' | 'warning' | 'info' } | null>(null);
 
   useEffect(() => {
     if (activeTab === 'users') {
@@ -94,7 +96,11 @@ export default function AdminScreen() {
 
     // Prevent deactivating admin users
     if (user.is_active && user.role === 'admin') {
-      alert('Cannot deactivate admin users');
+      setAlert({
+        title: 'Cannot Deactivate',
+        message: 'Admin users cannot be deactivated.',
+        variant: 'warning',
+      });
       setToggleTarget(null);
       return;
     }
@@ -111,7 +117,11 @@ export default function AdminScreen() {
       setToggleTarget(null);
     } catch (err) {
       console.error('Error toggling user:', err);
-      alert('Failed to update user status');
+      setAlert({
+        title: 'Error',
+        message: 'Failed to update user status. Please try again.',
+        variant: 'error',
+      });
     }
   };
 
@@ -130,7 +140,11 @@ export default function AdminScreen() {
       setToggleTarget(null);
     } catch (err) {
       console.error('Error toggling store:', err);
-      alert('Failed to update store status');
+      setAlert({
+        title: 'Error',
+        message: 'Failed to update store status. Please try again.',
+        variant: 'error',
+      });
     }
   };
 
@@ -230,6 +244,15 @@ export default function AdminScreen() {
         message={`Are you sure you want to ${toggleTarget?.currentStatus ? 'deactivate' : 'activate'} this ${toggleTarget?.type}?`}
         confirmText={toggleTarget?.currentStatus ? 'Deactivate' : 'Activate'}
         variant={toggleTarget?.currentStatus ? 'danger' : 'info'}
+      />
+
+      {/* Alert Dialog */}
+      <AlertDialog
+        isOpen={!!alert}
+        onClose={() => setAlert(null)}
+        title={alert?.title || ''}
+        message={alert?.message || ''}
+        variant={alert?.variant || 'info'}
       />
 
       <BottomNav />

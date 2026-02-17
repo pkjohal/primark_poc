@@ -8,6 +8,7 @@ import PageHeader from '@/components/layout/PageHeader';
 import BarcodeScanner from '@/components/scanner/BarcodeScanner';
 import ItemRow from '@/components/session/ItemRow';
 import Button from '@/components/ui/Button';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useSessions } from '@/hooks/useSessions';
 import { useSessionItems } from '@/hooks/useSessionItems';
@@ -31,6 +32,7 @@ export default function EntryScanScreen() {
   const [manualEntry, setManualEntry] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   // Load existing items when session is set
   useEffect(() => {
@@ -156,11 +158,11 @@ export default function EntryScanScreen() {
     }
   };
 
-  const handleCancel = async () => {
-    if (!confirm('Are you sure you want to cancel? This session will be discarded.')) {
-      return;
-    }
+  const handleCancelClick = () => {
+    setShowCancelConfirm(true);
+  };
 
+  const handleCancelConfirm = async () => {
     // Delete the session if one was created
     if (sessionId) {
       try {
@@ -208,7 +210,7 @@ export default function EntryScanScreen() {
             : `Step 2: Scan all items entering (Tag: ${tagBarcode})`
         }
         showBack
-        onBack={handleCancel}
+        onBack={handleCancelClick}
       />
 
       <div className="flex-1 max-w-3xl mx-auto w-full p-4 space-y-4">
@@ -344,6 +346,18 @@ export default function EntryScanScreen() {
           )}
         </div>
       </div>
+
+      {/* Cancel Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showCancelConfirm}
+        onClose={() => setShowCancelConfirm(false)}
+        onConfirm={handleCancelConfirm}
+        title="Cancel Session?"
+        message="Are you sure you want to cancel? This session will be discarded."
+        confirmText="Yes, Cancel"
+        cancelText="No, Continue"
+        variant="danger"
+      />
     </div>
   );
 }

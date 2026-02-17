@@ -1,18 +1,23 @@
 // Top navigation bar
 
+import { useState } from 'react';
 import { LogOut, User } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 export default function NavBar() {
   const { store, teamMember, logout } = useAuth();
   const navigate = useNavigate();
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-  const handleLogout = () => {
-    if (confirm('Are you sure you want to log out?')) {
-      logout();
-      navigate('/login');
-    }
+  const handleLogoutClick = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const handleLogoutConfirm = () => {
+    logout();
+    navigate('/login');
   };
 
   return (
@@ -37,7 +42,7 @@ export default function NavBar() {
           </div>
 
           <button
-            onClick={handleLogout}
+            onClick={handleLogoutClick}
             className="p-2 hover:bg-white/10 rounded-lg transition-colors"
             title="Logout"
           >
@@ -45,6 +50,18 @@ export default function NavBar() {
           </button>
         </div>
       </div>
+
+      {/* Logout Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={handleLogoutConfirm}
+        title="Log Out?"
+        message="Are you sure you want to log out?"
+        confirmText="Yes, Log Out"
+        cancelText="Cancel"
+        variant="warning"
+      />
     </nav>
   );
 }
