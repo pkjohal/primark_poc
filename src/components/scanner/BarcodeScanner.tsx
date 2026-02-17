@@ -117,15 +117,17 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
           onClick={toggleScanner}
           variant={isScanning ? 'danger' : 'primary'}
           size="sm"
+          className='inline-flex text-center items-center gap-2'
+
         >
           {isScanning ? (
             <>
-              <CameraOff size={20} className="mr-2" />
+              <CameraOff size={20}/>
               Stop Camera
             </>
           ) : (
             <>
-              <Camera size={20} className="mr-2" />
+              <Camera size={20}/>
               Start Camera
             </>
           )}
