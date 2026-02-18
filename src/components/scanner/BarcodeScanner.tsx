@@ -18,6 +18,7 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
   const [zoomSupported, setZoomSupported] = useState(false);
   const [availableCameras, setAvailableCameras] = useState<Array<{ id: string; label: string }>>([]);
   const [currentCameraIndex, setCurrentCameraIndex] = useState(0);
+  const [hasMultipleCameras, setHasMultipleCameras] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerElementRef = useRef<HTMLDivElement>(null);
   const videoTrackRef = useRef<MediaStreamTrack | null>(null);
@@ -47,6 +48,7 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
           // Only update cameras list if not already set (first initialization)
           if (availableCameras.length === 0) {
             setAvailableCameras(devices.map(d => ({ id: d.id, label: d.label })));
+            setHasMultipleCameras(devices.length > 1);
           }
           console.log('📷 Available cameras:', devices.map((d, i) => `[${i}] ${d.label}`));
 
@@ -199,13 +201,14 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
   };
 
   const switchCamera = async () => {
-    if (availableCameras.length <= 1) return;
+    if (!hasMultipleCameras || availableCameras.length <= 1) return;
 
     await stopScanner();
 
     // Move to next camera
     const nextIndex = (currentCameraIndex + 1) % availableCameras.length;
     setCurrentCameraIndex(nextIndex);
+    console.log('🔄 Switching to camera index:', nextIndex);
 
     // Restart with new camera
     await initScanner();
@@ -267,13 +270,13 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
           )}
         </Button>
 
-        {isScanning && availableCameras.length > 1 && (
+        {isScanning && hasMultipleCameras && (
           <Button
             onClick={switchCamera}
             variant="outline"
             size="sm"
             className='inline-flex text-center items-center gap-2'
-            title={`Switch camera (${currentCameraIndex + 1}/${availableCameras.length})`}
+            title="Switch camera"
           >
             <SwitchCamera size={20}/>
           </Button>
