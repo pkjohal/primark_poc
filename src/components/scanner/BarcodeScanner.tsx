@@ -1,7 +1,7 @@
 // Barcode scanner component using html5-qrcode
 
 import { useEffect, useRef, useState } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { Camera, CameraOff, ZoomIn, ZoomOut } from 'lucide-react';
 import Button from '../ui/Button';
 
@@ -14,7 +14,7 @@ interface BarcodeScannerProps {
 export default function BarcodeScanner({ onScan, onError, isActive = true }: BarcodeScannerProps) {
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [zoomLevel, setZoomLevel] = useState(1.5);
+  const [zoomLevel, setZoomLevel] = useState(2.0);
   const [zoomSupported, setZoomSupported] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerElementRef = useRef<HTMLDivElement>(null);
@@ -37,40 +37,88 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
       const scanner = new Html5Qrcode('barcode-scanner');
       scannerRef.current = scanner;
 
+      // Try to get specific back camera ID for Chrome compatibility
+      let backCameraId: string | undefined;
+      try {
+        const devices = await Html5Qrcode.getCameras();
+        console.log('Available cameras:', devices.map(d => d.label));
+
+        // Look for back/rear camera
+        const backCamera = devices.find(device =>
+          device.label.toLowerCase().includes('back') ||
+          device.label.toLowerCase().includes('rear') ||
+          device.label.toLowerCase().includes('environment')
+        );
+
+        if (backCamera) {
+          backCameraId = backCamera.id;
+          console.log('Using back camera:', backCamera.label);
+        } else if (devices.length > 1) {
+          // Use last camera (usually back camera on mobile)
+          backCameraId = devices[devices.length - 1].id;
+          console.log('Using last camera:', devices[devices.length - 1].label);
+        }
+      } catch (err) {
+        console.log('Could not enumerate cameras, will use facingMode');
+      }
+
       const config = {
-          fps: 30,
+          fps: 60, // Maximum FPS for fastest detection
           qrbox: function(viewfinderWidth: number, _viewfinderHeight: number) {
-            // Large scan area for distance scanning
-            const width = Math.floor(viewfinderWidth * 0.55);
-            const height = Math.floor(width * 0.3);
+            // Very large scan area - 70% of screen for maximum coverage
+            const width = Math.floor(viewfinderWidth * 0.7);
+            const height = Math.floor(width * 0.35);
             return { width, height };
           },
           aspectRatio: 2.0,
           videoConstraints: {
             width: { ideal: 1920 },
             height: { ideal: 1080 },
-          }
+          },
+          formatsToSupport: [
+            // Enable all 1D barcode formats for better detection
+            Html5QrcodeSupportedFormats.CODE_128,
+            Html5QrcodeSupportedFormats.CODE_39,
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.EAN_8,
+            Html5QrcodeSupportedFormats.UPC_A,
+            Html5QrcodeSupportedFormats.UPC_E,
+          ]
         };
 
-      await scanner.start(
-        { facingMode: 'environment' },
-        config,
-        (decodedText) => {
-          onScan(decodedText);
-        },
-        (errorMessage) => {
-          // Scanning errors are expected when no barcode is in view
-          // We only log them, not display them
-          console.debug('Scan error:', errorMessage);
-        }
-      );
+      // Use camera ID if found (better for Chrome), otherwise use facingMode
+      if (backCameraId) {
+        console.log('Starting scanner with camera ID');
+        await scanner.start(
+          backCameraId,
+          config,
+          (decodedText) => {
+            onScan(decodedText);
+          },
+          (errorMessage) => {
+            console.debug('Scan error:', errorMessage);
+          }
+        );
+      } else {
+        console.log('Starting scanner with facingMode');
+        await scanner.start(
+          { facingMode: 'environment' },
+          config,
+          (decodedText) => {
+            onScan(decodedText);
+          },
+          (errorMessage) => {
+            console.debug('Scan error:', errorMessage);
+          }
+        );
+      }
 
       setIsScanning(true);
       setError(null);
 
-      // Check zoom support and apply default zoom after camera starts
+      // Check zoom support and apply 2x zoom for better distance detection
       setTimeout(() => {
-        checkAndApplyZoom(1.5);
+        checkAndApplyZoom(2.0);
       }, 500);
     } catch (err: any) {
       const errorMsg = err?.message || 'Failed to start camera';
@@ -179,6 +227,14 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
               <Camera size={48} className="mx-auto mb-4 opacity-50" />
               <p className="font-semibold">Camera Inactive</p>
             </div>
+          </div>
+        )}
+
+        {isScanning && (
+          <div className="absolute bottom-2 left-0 right-0 text-center">
+            <p className="text-white text-xs bg-black/60 inline-block px-3 py-1 rounded-full">
+              Keep barcode inside the box • 20-40cm away
+            </p>
           </div>
         )}
       </div>
