@@ -107,33 +107,17 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
 
       // Optimized config for barcode scanning at various distances
       const config = {
-        fps: 30, // High frame rate for faster scanning
-        qrbox: function(viewfinderWidth: number, _viewfinderHeight: number) {
-          // Larger scan area - 85% of width, barcode-shaped height
-          const width = Math.floor(viewfinderWidth * 0.85);
-          const height = Math.floor(width * 0.3); // Wide and short for barcode format
-          return {
-            width: width,
-            height: height
-          };
-        },
+        fps: 10, // Standard frame rate for better compatibility
+        qrbox: { width: 300, height: 150 }, // Fixed size for better performance
         aspectRatio: 1.777, // 16:9 aspect ratio
         disableFlip: false,
-        videoConstraints: {
-          width: { ideal: 1920 }, // Higher resolution for distance scanning
-          height: { ideal: 1080 },
-        }
       };
 
-      // Advanced camera constraints optimized for distance
+      // Force back camera (environment-facing)
       const cameraConstraints = {
-        facingMode: 'environment',
-        width: { ideal: 1920 },
-        height: { ideal: 1080 },
-        advanced: [
-          { focusMode: 'continuous' }, // Continuous autofocus
-          { zoom: 1.0 } // No zoom for wider field of view
-        ]
+        facingMode: { exact: 'environment' }, // Force back camera
+        width: { ideal: 1280 },
+        height: { ideal: 720 },
       };
 
       await scanner.start(
@@ -162,22 +146,13 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
         scannerRef.current = scanner;
 
         const basicConfig = {
-          fps: 30,
-          qrbox: function(viewfinderWidth: number, _viewfinderHeight: number) {
-            // Large scan area for distance scanning
-            const width = Math.floor(viewfinderWidth * 0.85);
-            const height = Math.floor(width * 0.3);
-            return { width, height };
-          },
+          fps: 10,
+          qrbox: { width: 300, height: 150 },
           aspectRatio: 1.777,
-          videoConstraints: {
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
-          }
         };
 
         await scanner.start(
-          { facingMode: 'environment' }, // Basic constraints only
+          { facingMode: { exact: 'environment' } }, // Force back camera
           basicConfig,
           (decodedText) => {
             onScan(decodedText);
