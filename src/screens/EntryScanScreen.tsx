@@ -33,6 +33,8 @@ export default function EntryScanScreen() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showItemAdded, setShowItemAdded] = useState(false);
+  const [scanningPaused, setScanningPaused] = useState(false);
 
   // Load existing items when session is set
   useEffect(() => {
@@ -75,32 +77,28 @@ export default function EntryScanScreen() {
   });
 
   const handleItemScan = useBarcodeScan(async (barcode) => {
-    if (!sessionId) return;
+    if (!sessionId || scanningPaused) return;
 
     setError(null);
-    // Show confirmation popup
-    setScannedBarcode(barcode);
-  }, { debounceTime: 2000 }); // Prevent duplicate scans for 2 seconds
+    setScanningPaused(true); // Pause scanning temporarily
 
-  const handleConfirmAdd = async () => {
-    if (!sessionId || !scannedBarcode) return;
-
-    setLoading(true);
     try {
-      const item = await addSessionItem(sessionId, scannedBarcode);
+      const item = await addSessionItem(sessionId, barcode);
       setItems(prevItems => [...prevItems, item]);
-      setScannedBarcode(null);
+      setScannedBarcode(barcode);
+      setShowItemAdded(true);
+
+      // Auto-hide overlay and resume scanning after 2 seconds
+      setTimeout(() => {
+        setShowItemAdded(false);
+        setScannedBarcode(null);
+        setScanningPaused(false);
+      }, 2000);
     } catch (err: any) {
       setError(err.message || 'Failed to add item');
-    } finally {
-      setLoading(false);
+      setScanningPaused(false);
     }
-  };
-
-  const handleCancelAdd = () => {
-    setScannedBarcode(null);
-    setError(null);
-  };
+  }, { debounceTime: 500 }); // Short debounce since we're pausing after scan
 
   const handleManualEntry = async () => {
     const barcode = manualEntry.trim().toUpperCase();
@@ -215,11 +213,22 @@ export default function EntryScanScreen() {
 
       <div className="flex-1 max-w-3xl mx-auto w-full p-4 space-y-4">
         {/* Scanner */}
-        <div className="card">
+        <div className="card relative">
           <BarcodeScanner
             onScan={step === 'scan_tag' ? handleTagScan.handleScan : handleItemScan.handleScan}
-            isActive={!loading && !scannedBarcode}
+            isActive={!loading && !scanningPaused}
           />
+
+          {/* Item Added Overlay */}
+          {step === 'scan_items' && showItemAdded && scannedBarcode && (
+            <div className="absolute inset-0 bg-green-500/80 rounded-lg flex flex-col items-center justify-center animate-in fade-in zoom-in duration-200">
+              <div className="bg-white rounded-full p-6 mb-4">
+                <Check size={64} className="text-green-500" />
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-2">Item Added!</h3>
+              <p className="text-white text-lg">{scannedBarcode}</p>
+            </div>
+          )}
 
           {/* Manual entry */}
           <div className="mt-4 flex gap-2">
@@ -230,12 +239,12 @@ export default function EntryScanScreen() {
               onKeyPress={(e) => e.key === 'Enter' && handleManualEntry()}
               placeholder={step === 'scan_tag' ? 'Enter tag barcode' : 'Enter item barcode'}
               className="input"
-              disabled={loading || !!scannedBarcode}
+              disabled={loading || scanningPaused}
             />
             <Button
               onClick={handleManualEntry}
               variant="outline"
-              disabled={loading || !!scannedBarcode}
+              disabled={loading || scanningPaused}
               className="px-6 flex items-center justify-center gap-2"
             >
               <Keyboard size={20} />
@@ -250,32 +259,6 @@ export default function EntryScanScreen() {
           )}
           
         </div>
-
-        {step === 'scan_items' && scannedBarcode && (
-          <div className="card bg-primark-light-blue border-2 border-primark-blue">
-            <div className="flex items-center gap-3">
-              <h3 className="text-lg font-bold text-primark-navy flex-1">Add {scannedBarcode}</h3>
-              <Button
-                onClick={handleCancelAdd}
-                variant="outline"
-                size="md"
-                disabled={loading}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleConfirmAdd}
-                variant="success"
-                size="md"
-                isLoading={loading}
-                className="inline-flex items-center justify-center gap-2"
-              >
-                <Check size={20} />
-                Add Item
-              </Button>
-            </div>
-          </div>
-        )}
 
         {/* Items list (only show in step 2) */}
         {step === 'scan_items' && (
