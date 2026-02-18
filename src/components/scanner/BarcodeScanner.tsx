@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
-import { Camera, CameraOff, ZoomIn, ZoomOut } from 'lucide-react';
+import { Camera, CameraOff, ZoomIn, ZoomOut, SwitchCamera } from 'lucide-react';
 import Button from '../ui/Button';
 
 interface BarcodeScannerProps {
@@ -16,6 +16,8 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
   const [error, setError] = useState<string | null>(null);
   const [zoomLevel, setZoomLevel] = useState(2.0);
   const [zoomSupported, setZoomSupported] = useState(false);
+  const [availableCameras, setAvailableCameras] = useState<Array<{ id: string; label: string }>>([]);
+  const [currentCameraIndex, setCurrentCameraIndex] = useState(0);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerElementRef = useRef<HTMLDivElement>(null);
   const videoTrackRef = useRef<MediaStreamTrack | null>(null);
@@ -37,35 +39,45 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
       const scanner = new Html5Qrcode('barcode-scanner');
       scannerRef.current = scanner;
 
-      // Try to get specific back camera ID for Chrome compatibility
-      let backCameraId: string | undefined;
+      // Get available cameras and select the best one for back camera
+      let cameraId: string | { facingMode: string } = { facingMode: 'environment' };
       try {
         const devices = await Html5Qrcode.getCameras();
-        console.log('Available cameras:', devices.map(d => d.label));
+        if (devices.length > 0) {
+          // Only update cameras list if not already set (first initialization)
+          if (availableCameras.length === 0) {
+            setAvailableCameras(devices.map(d => ({ id: d.id, label: d.label })));
+          }
+          console.log('📷 Available cameras:', devices.map((d, i) => `[${i}] ${d.label}`));
 
-        // Look for back/rear camera
-        const backCamera = devices.find(device =>
-          device.label.toLowerCase().includes('back') ||
-          device.label.toLowerCase().includes('rear') ||
-          device.label.toLowerCase().includes('environment')
-        );
+          // If user has manually selected a camera, use that
+          if (availableCameras.length > 0 && devices[currentCameraIndex]) {
+            cameraId = devices[currentCameraIndex].id;
+            console.log('🔄 Using selected camera (index ' + currentCameraIndex + '):', devices[currentCameraIndex].label);
+          } else {
+            // Initial camera selection
+            const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.innerWidth <= 768;
 
-        if (backCamera) {
-          backCameraId = backCamera.id;
-          console.log('Using back camera:', backCamera.label);
-        } else if (devices.length > 1) {
-          // Use last camera (usually back camera on mobile)
-          backCameraId = devices[devices.length - 1].id;
-          console.log('Using last camera:', devices[devices.length - 1].label);
+            if (isMobile && devices.length > 1) {
+              // Use last camera (back camera on most mobile devices)
+              cameraId = devices[devices.length - 1].id;
+              setCurrentCameraIndex(devices.length - 1);
+              console.log('📱 Mobile: Using last camera (index ' + (devices.length - 1) + '):', devices[devices.length - 1].label);
+            } else if (devices.length > 0) {
+              // Desktop or single camera - use first available
+              cameraId = devices[0].id;
+              setCurrentCameraIndex(0);
+              console.log('💻 Desktop: Using first camera:', devices[0].label);
+            }
+          }
         }
       } catch (err) {
-        console.log('Could not enumerate cameras, will use facingMode');
+        console.log('⚠️ Camera enumeration failed, using facingMode fallback');
       }
 
       const config = {
-          fps: 60, // Maximum FPS for fastest detection
+          fps: 60,
           qrbox: function(viewfinderWidth: number, _viewfinderHeight: number) {
-            // Very large scan area - 70% of screen for maximum coverage
             const width = Math.floor(viewfinderWidth * 0.7);
             const height = Math.floor(width * 0.35);
             return { width, height };
@@ -76,7 +88,6 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
             height: { ideal: 1080 },
           },
           formatsToSupport: [
-            // Enable all 1D barcode formats for better detection
             Html5QrcodeSupportedFormats.CODE_128,
             Html5QrcodeSupportedFormats.CODE_39,
             Html5QrcodeSupportedFormats.EAN_13,
@@ -86,32 +97,16 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
           ]
         };
 
-      // Use camera ID if found (better for Chrome), otherwise use facingMode
-      if (backCameraId) {
-        console.log('Starting scanner with camera ID');
-        await scanner.start(
-          backCameraId,
-          config,
-          (decodedText) => {
-            onScan(decodedText);
-          },
-          (errorMessage) => {
-            console.debug('Scan error:', errorMessage);
-          }
-        );
-      } else {
-        console.log('Starting scanner with facingMode');
-        await scanner.start(
-          { facingMode: 'environment' },
-          config,
-          (decodedText) => {
-            onScan(decodedText);
-          },
-          (errorMessage) => {
-            console.debug('Scan error:', errorMessage);
-          }
-        );
-      }
+      await scanner.start(
+        cameraId,
+        config,
+        (decodedText) => {
+          onScan(decodedText);
+        },
+        (errorMessage) => {
+          console.debug('Scan error:', errorMessage);
+        }
+      );
 
       setIsScanning(true);
       setError(null);
@@ -203,6 +198,19 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
     }
   };
 
+  const switchCamera = async () => {
+    if (availableCameras.length <= 1) return;
+
+    await stopScanner();
+
+    // Move to next camera
+    const nextIndex = (currentCameraIndex + 1) % availableCameras.length;
+    setCurrentCameraIndex(nextIndex);
+
+    // Restart with new camera
+    await initScanner();
+  };
+
   return (
     <div className="w-full">
       <div className="relative bg-black rounded-lg overflow-hidden" style={{ minHeight: '300px' }}>
@@ -258,6 +266,18 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
             </>
           )}
         </Button>
+
+        {isScanning && availableCameras.length > 1 && (
+          <Button
+            onClick={switchCamera}
+            variant="outline"
+            size="sm"
+            className='inline-flex text-center items-center gap-2'
+            title={`Switch camera (${currentCameraIndex + 1}/${availableCameras.length})`}
+          >
+            <SwitchCamera size={20}/>
+          </Button>
+        )}
 
         {isScanning && zoomSupported && (
           <>
