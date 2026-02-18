@@ -10,6 +10,7 @@ import EntryScanScreen from '@/screens/EntryScanScreen';
 import ExitScanScreen from '@/screens/ExitScanScreen';
 import DiscrepancyScreen from '@/screens/DiscrepancyScreen';
 import BackOfHouseScreen from '@/screens/BackOfHouseScreen';
+import BasketsScreen from '@/screens/BasketsScreen';
 import ManagerDashboardScreen from '@/screens/ManagerDashboardScreen';
 import AdminScreen from '@/screens/AdminScreen';
 
@@ -82,6 +83,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <BackOfHouseScreen />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/baskets"
+        element={
+          <ProtectedRoute>
+            <BasketsScreen />
           </ProtectedRoute>
         }
       />
