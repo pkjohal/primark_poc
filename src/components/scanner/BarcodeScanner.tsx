@@ -105,20 +105,34 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
       const scanner = new Html5Qrcode(scannerIdRef.current);
       scannerRef.current = scanner;
 
-      // Optimized config for barcode scanning at various distances
+      // High quality config for distance barcode scanning
       const config = {
-        fps: 10, // Standard frame rate for better compatibility
-        qrbox: { width: 300, height: 150 }, // Fixed size for better performance
+        fps: 30,
+        qrbox: function(viewfinderWidth: number, _viewfinderHeight: number) {
+          // Very large scan area - 90% of width for maximum coverage
+          const width = Math.floor(viewfinderWidth * 0.9);
+          const height = Math.floor(width * 0.35); // Wide and short for barcode format
+          return {
+            width: width,
+            height: height
+          };
+        },
         aspectRatio: 1.777, // 16:9 aspect ratio
         disableFlip: false,
+        videoConstraints: {
+          width: { ideal: 1920 }, // Higher resolution for distance scanning
+          height: { ideal: 1080 },
+        },
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true // Native barcode detector for better distance detection
+        }
       };
 
-      // Force back camera (environment-facing) with zoom
-      const cameraConstraints: any = {
-        facingMode: { exact: 'environment' }, // Force back camera
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
-        advanced: [{ zoom: 2.0 }] // 2x zoom by default
+      // High resolution camera constraints (ideal, not exact - fallback if not supported)
+      const cameraConstraints = {
+        facingMode: 'environment',
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
       };
 
       await scanner.start(
@@ -138,6 +152,11 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
         setIsScanning(true);
         setError(null);
       }
+
+      // Apply zoom after a short delay to ensure camera is fully initialized
+      setTimeout(() => {
+        applyZoom(1.5);
+      }, 500);
     } catch (err: any) {
       console.error('Camera initialization error with advanced constraints:', err);
 
@@ -147,16 +166,29 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
         scannerRef.current = scanner;
 
         const basicConfig = {
-          fps: 10,
-          qrbox: { width: 300, height: 150 },
+          fps: 30,
+           qrbox: function(viewfinderWidth: number, _viewfinderHeight: number) {
+            // Very large scan area for distance scanning
+            const width = Math.floor(viewfinderWidth * 0.9);
+            const height = Math.floor(width * 0.35);
+            return { width, height };
+          },
           aspectRatio: 1.777,
+          videoConstraints: {
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+          },
+          experimentalFeatures: {
+            useBarCodeDetectorIfSupported: true
+          }
         };
 
         await scanner.start(
           {
-            facingMode: { exact: 'environment' }, // Force back camera
-            advanced: [{ zoom: 2.0 }] // 2x zoom by default
-          } as any,
+            facingMode: 'environment',
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+          },
           basicConfig,
           (decodedText) => {
             onScan(decodedText);
@@ -173,6 +205,10 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
 
         // Check torch support after successful camera start
         checkTorchSupport();
+        // Apply zoom after a short delay
+        setTimeout(() => {
+          applyZoom(1.5);
+        }, 500);
       } catch (fallbackErr: any) {
         const errorMsg = fallbackErr?.message || 'Failed to start camera';
         if (isMountedRef.current) {
@@ -209,6 +245,34 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
     } catch (err) {
       console.error('Error checking torch support:', err);
       setTorchSupported(false);
+    }
+  };
+
+  // Apply zoom to camera
+  const applyZoom = async (zoomLevel: number) => {
+    try {
+      const videoElement = document.querySelector(`#${scannerIdRef.current} video`) as HTMLVideoElement;
+      if (videoElement && videoElement.srcObject) {
+        const stream = videoElement.srcObject as MediaStream;
+        const videoTrack = stream.getVideoTracks()[0];
+
+        const capabilities = videoTrack.getCapabilities() as any;
+        if (capabilities && capabilities.zoom) {
+          const { min, max } = capabilities.zoom;
+          // Clamp zoom level between min and max
+          const clampedZoom = Math.min(Math.max(zoomLevel, min), max);
+
+          await videoTrack.applyConstraints({
+            // @ts-ignore - zoom is not in TypeScript definitions
+            advanced: [{ zoom: clampedZoom }]
+          });
+          console.log(`Zoom applied: ${clampedZoom}x`);
+        } else {
+          console.log('Zoom is not supported on this device');
+        }
+      }
+    } catch (err) {
+      console.error('Error applying zoom:', err);
     }
   };
 
@@ -305,13 +369,6 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
           </div>
         )}
 
-        {isScanning && (
-          <div className="absolute bottom-2 left-0 right-0 text-center">
-            <p className="text-white text-xs bg-black/50 inline-block px-3 py-1 rounded-full">
-              Hold barcode 15-30cm from camera
-            </p>
-          </div>
-        )}
       </div>
 
       <div className="mt-4 flex justify-center gap-3">
