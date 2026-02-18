@@ -105,6 +105,31 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
       const scanner = new Html5Qrcode(scannerIdRef.current);
       scannerRef.current = scanner;
 
+      // Get list of cameras and try to find back camera
+      let cameraId: string | undefined;
+      try {
+        const devices = await Html5Qrcode.getCameras();
+        console.log('Available cameras:', devices);
+
+        // Look for back camera (environment facing)
+        const backCamera = devices.find(device =>
+          device.label.toLowerCase().includes('back') ||
+          device.label.toLowerCase().includes('rear') ||
+          device.label.toLowerCase().includes('environment')
+        );
+
+        if (backCamera) {
+          cameraId = backCamera.id;
+          console.log('Found back camera:', backCamera.label);
+        } else if (devices.length > 0) {
+          // If no back camera found by label, try the last camera (usually back on mobile)
+          cameraId = devices[devices.length - 1].id;
+          console.log('Using last camera (likely back):', devices[devices.length - 1].label);
+        }
+      } catch (err) {
+        console.log('Could not get camera list, will use facingMode instead');
+      }
+
       // High quality config for distance barcode scanning
       const config = {
         fps: 30,
@@ -128,25 +153,40 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
         }
       };
 
-      // Force back camera first (will fallback to front if back camera not available)
-      const cameraConstraints = {
-        facingMode: { exact: 'environment' }, // Force back camera
-        width: { ideal: 1920 },
-        height: { ideal: 1080 },
-      };
+      // Use specific camera ID if found, otherwise use facingMode
+      if (cameraId) {
+        // Start with specific camera ID (most reliable for selecting back camera)
+        console.log('Starting scanner with camera ID:', cameraId);
+        await scanner.start(
+          cameraId,
+          config,
+          (decodedText) => {
+            onScan(decodedText);
+          },
+          (errorMessage) => {
+            console.debug('Scan error:', errorMessage);
+          }
+        );
+      } else {
+        // Fallback to facingMode if no camera ID found
+        console.log('Starting scanner with facingMode');
+        const cameraConstraints = {
+          facingMode: { exact: 'environment' },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+        };
 
-      await scanner.start(
-        cameraConstraints as any,
-        config,
-        (decodedText) => {
-          onScan(decodedText);
-        },
-        (errorMessage) => {
-          // Scanning errors are expected when no barcode is in view
-          // We only log them, not display them
-          console.debug('Scan error:', errorMessage);
-        }
-      );
+        await scanner.start(
+          cameraConstraints as any,
+          config,
+          (decodedText) => {
+            onScan(decodedText);
+          },
+          (errorMessage) => {
+            console.debug('Scan error:', errorMessage);
+          }
+        );
+      }
 
       if (isMountedRef.current) {
         setIsScanning(true);
