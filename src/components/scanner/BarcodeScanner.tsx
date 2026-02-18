@@ -185,7 +185,7 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
 
         await scanner.start(
           {
-            facingMode: 'environment',
+            facingMode: { exact: 'environment' }, // Force back camera in fallback too
             width: { ideal: 1920 },
             height: { ideal: 1080 },
           },
@@ -210,13 +210,55 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
           applyZoom(1.5);
         }, 500);
       } catch (fallbackErr: any) {
-        const errorMsg = fallbackErr?.message || 'Failed to start camera';
-        if (isMountedRef.current) {
-          setError(errorMsg);
-          if (onError) onError(errorMsg);
-        }
         console.error('Camera initialization failed with fallback:', fallbackErr);
-        scannerRef.current = null;
+
+        // Final attempt: Try without forcing back camera (for laptops with only front camera)
+        try {
+          const scanner = new Html5Qrcode(scannerIdRef.current);
+          scannerRef.current = scanner;
+
+          const finalConfig = {
+            fps: 30,
+            qrbox: function(viewfinderWidth: number, _viewfinderHeight: number) {
+              const width = Math.floor(viewfinderWidth * 0.9);
+              const height = Math.floor(width * 0.35);
+              return { width, height };
+            },
+            aspectRatio: 1.777,
+            experimentalFeatures: {
+              useBarCodeDetectorIfSupported: true
+            }
+          };
+
+          await scanner.start(
+            { facingMode: 'environment' }, // Allow front camera as last resort
+            finalConfig,
+            (decodedText) => {
+              onScan(decodedText);
+            },
+            (errorMessage) => {
+              console.debug('Scan error:', errorMessage);
+            }
+          );
+
+          if (isMountedRef.current) {
+            setIsScanning(true);
+            setError(null);
+          }
+
+          checkTorchSupport();
+          setTimeout(() => {
+            applyZoom(1.5);
+          }, 500);
+        } catch (finalErr: any) {
+          const errorMsg = finalErr?.message || 'Failed to start camera';
+          if (isMountedRef.current) {
+            setError(errorMsg);
+            if (onError) onError(errorMsg);
+          }
+          console.error('All camera initialization attempts failed:', finalErr);
+          scannerRef.current = null;
+        }
       }
     }
 
