@@ -41,7 +41,7 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
           fps: 30,
           qrbox: function(viewfinderWidth: number, _viewfinderHeight: number) {
             // Large scan area for distance scanning
-            const width = Math.floor(viewfinderWidth * 0.85);
+            const width = Math.floor(viewfinderWidth * 0.55);
             const height = Math.floor(width * 0.3);
             return { width, height };
           },
