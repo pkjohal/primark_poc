@@ -113,11 +113,12 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
         disableFlip: false,
       };
 
-      // Force back camera (environment-facing)
-      const cameraConstraints = {
+      // Force back camera (environment-facing) with zoom
+      const cameraConstraints: any = {
         facingMode: { exact: 'environment' }, // Force back camera
         width: { ideal: 1280 },
         height: { ideal: 720 },
+        advanced: [{ zoom: 2.0 }] // 2x zoom by default
       };
 
       await scanner.start(
@@ -152,7 +153,10 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
         };
 
         await scanner.start(
-          { facingMode: { exact: 'environment' } }, // Force back camera
+          {
+            facingMode: { exact: 'environment' }, // Force back camera
+            advanced: [{ zoom: 2.0 }] // 2x zoom by default
+          } as any,
           basicConfig,
           (decodedText) => {
             onScan(decodedText);
