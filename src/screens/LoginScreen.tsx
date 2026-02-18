@@ -173,7 +173,7 @@ export default function LoginScreen() {
           >
             PRIMARK
           </h1>
-          <p className="text-white/80 text-sm">Changing Room Tracker</p>
+          <p className="text-white/80 text-sm">Fitting Room Tracker</p>
         </div>
 
         {/* Login Card */}
