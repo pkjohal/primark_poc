@@ -128,9 +128,9 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
         }
       };
 
-      // High resolution camera constraints (ideal, not exact - fallback if not supported)
+      // Force back camera first (will fallback to front if back camera not available)
       const cameraConstraints = {
-        facingMode: 'environment',
+        facingMode: { exact: 'environment' }, // Force back camera
         width: { ideal: 1920 },
         height: { ideal: 1080 },
       };
