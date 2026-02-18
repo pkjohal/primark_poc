@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { Camera, CameraOff } from 'lucide-react';
+import { Camera, CameraOff, ZoomIn, ZoomOut } from 'lucide-react';
 import Button from '../ui/Button';
 
 interface BarcodeScannerProps {
@@ -14,8 +14,11 @@ interface BarcodeScannerProps {
 export default function BarcodeScanner({ onScan, onError, isActive = true }: BarcodeScannerProps) {
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [zoomLevel, setZoomLevel] = useState(2.0);
+  const [zoomSupported, setZoomSupported] = useState(false);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const scannerElementRef = useRef<HTMLDivElement>(null);
+  const videoTrackRef = useRef<MediaStreamTrack | null>(null);
 
   useEffect(() => {
     if (isActive && !scannerRef.current && scannerElementRef.current) {
@@ -55,12 +58,71 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
 
       setIsScanning(true);
       setError(null);
+
+      // Check zoom support and apply 2x zoom for better distance detection
+      setTimeout(() => {
+        checkAndApplyZoom(2.0);
+      }, 500);
     } catch (err: any) {
       const errorMsg = err?.message || 'Failed to start camera';
       setError(errorMsg);
       if (onError) onError(errorMsg);
       console.error('Camera initialization error:', err);
     }
+  };
+
+  const checkAndApplyZoom = async (zoom: number) => {
+    try {
+      const videoElement = document.querySelector('#barcode-scanner video') as HTMLVideoElement;
+      if (videoElement && videoElement.srcObject) {
+        const stream = videoElement.srcObject as MediaStream;
+        const videoTrack = stream.getVideoTracks()[0];
+        videoTrackRef.current = videoTrack;
+
+        const capabilities = videoTrack.getCapabilities() as any;
+        if (capabilities && capabilities.zoom) {
+          setZoomSupported(true);
+          await applyZoom(zoom);
+          console.log('Zoom supported and applied:', zoom);
+        } else {
+          setZoomSupported(false);
+          console.log('Zoom not supported on this device');
+        }
+      }
+    } catch (err) {
+      console.error('Error checking zoom support:', err);
+    }
+  };
+
+  const applyZoom = async (zoom: number) => {
+    if (!videoTrackRef.current) return;
+
+    try {
+      const capabilities = videoTrackRef.current.getCapabilities() as any;
+      if (capabilities && capabilities.zoom) {
+        const { min, max } = capabilities.zoom;
+        const clampedZoom = Math.min(Math.max(zoom, min), max);
+
+        await videoTrackRef.current.applyConstraints({
+          // @ts-ignore
+          advanced: [{ zoom: clampedZoom }]
+        });
+        setZoomLevel(clampedZoom);
+        console.log(`Zoom applied: ${clampedZoom}x`);
+      }
+    } catch (err) {
+      console.error('Error applying zoom:', err);
+    }
+  };
+
+  const handleZoomIn = () => {
+    const newZoom = Math.min(zoomLevel + 0.5, 3);
+    applyZoom(newZoom);
+  };
+
+  const handleZoomOut = () => {
+    const newZoom = Math.max(zoomLevel - 0.5, 1);
+    applyZoom(newZoom);
   };
 
   const stopScanner = async () => {
@@ -112,13 +174,12 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
         )}
       </div>
 
-      <div className="mt-4 flex justify-center">
+      <div className="mt-4 flex justify-center gap-2">
         <Button
           onClick={toggleScanner}
           variant={isScanning ? 'danger' : 'primary'}
           size="sm"
           className='inline-flex text-center items-center gap-2'
-
         >
           {isScanning ? (
             <>
@@ -132,6 +193,29 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
             </>
           )}
         </Button>
+
+        {isScanning && zoomSupported && (
+          <>
+            <Button
+              onClick={handleZoomOut}
+              variant="outline"
+              size="sm"
+              disabled={zoomLevel <= 1}
+              className='inline-flex text-center items-center gap-2'
+            >
+              <ZoomOut size={20}/>
+            </Button>
+            <Button
+              onClick={handleZoomIn}
+              variant="outline"
+              size="sm"
+              disabled={zoomLevel >= 3}
+              className='inline-flex text-center items-center gap-2'
+            >
+              <ZoomIn size={20}/>
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );
