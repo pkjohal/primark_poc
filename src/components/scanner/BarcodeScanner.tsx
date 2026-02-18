@@ -105,88 +105,41 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
       const scanner = new Html5Qrcode(scannerIdRef.current);
       scannerRef.current = scanner;
 
-      // Get list of cameras and try to find back camera
-      let cameraId: string | undefined;
-      try {
-        const devices = await Html5Qrcode.getCameras();
-        console.log('Available cameras:', devices);
-
-        // Look for back camera (environment facing)
-        const backCamera = devices.find(device =>
-          device.label.toLowerCase().includes('back') ||
-          device.label.toLowerCase().includes('rear') ||
-          device.label.toLowerCase().includes('environment')
-        );
-
-        if (backCamera) {
-          cameraId = backCamera.id;
-          console.log('Found back camera:', backCamera.label);
-        } else if (devices.length > 0) {
-          // If no back camera found by label, try the last camera (usually back on mobile)
-          cameraId = devices[devices.length - 1].id;
-          console.log('Using last camera (likely back):', devices[devices.length - 1].label);
-        }
-      } catch (err) {
-        console.log('Could not get camera list, will use facingMode instead');
-      }
-
-      // High quality config for distance barcode scanning
+      // Simple, working config
       const config = {
         fps: 30,
         qrbox: function(viewfinderWidth: number, _viewfinderHeight: number) {
-          // Very large scan area - 90% of width for maximum coverage
-          const width = Math.floor(viewfinderWidth * 0.9);
-          const height = Math.floor(width * 0.35); // Wide and short for barcode format
+          const width = Math.floor(viewfinderWidth * 0.85);
+          const height = Math.floor(width * 0.3);
           return {
             width: width,
             height: height
           };
         },
-        aspectRatio: 1.777, // 16:9 aspect ratio
+        aspectRatio: 1.777,
         disableFlip: false,
         videoConstraints: {
-          width: { ideal: 1920 }, // Higher resolution for distance scanning
+          width: { ideal: 1920 },
           height: { ideal: 1080 },
-        },
-        experimentalFeatures: {
-          useBarCodeDetectorIfSupported: true // Native barcode detector for better distance detection
         }
       };
 
-      // Use specific camera ID if found, otherwise use facingMode
-      if (cameraId) {
-        // Start with specific camera ID (most reliable for selecting back camera)
-        console.log('Starting scanner with camera ID:', cameraId);
-        await scanner.start(
-          cameraId,
-          config,
-          (decodedText) => {
-            onScan(decodedText);
-          },
-          (errorMessage) => {
-            console.debug('Scan error:', errorMessage);
-          }
-        );
-      } else {
-        // Fallback to facingMode if no camera ID found
-        console.log('Starting scanner with facingMode');
-        const cameraConstraints = {
-          facingMode: { exact: 'environment' },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-        };
+      const cameraConstraints = {
+        facingMode: { exact: 'environment' },
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+      };
 
-        await scanner.start(
-          cameraConstraints as any,
-          config,
-          (decodedText) => {
-            onScan(decodedText);
-          },
-          (errorMessage) => {
-            console.debug('Scan error:', errorMessage);
-          }
-        );
-      }
+      await scanner.start(
+        cameraConstraints as any,
+        config,
+        (decodedText) => {
+          onScan(decodedText);
+        },
+        (errorMessage) => {
+          console.debug('Scan error:', errorMessage);
+        }
+      );
 
       if (isMountedRef.current) {
         setIsScanning(true);
@@ -207,19 +160,15 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
 
         const basicConfig = {
           fps: 30,
-           qrbox: function(viewfinderWidth: number, _viewfinderHeight: number) {
-            // Very large scan area for distance scanning
-            const width = Math.floor(viewfinderWidth * 0.9);
-            const height = Math.floor(width * 0.35);
+          qrbox: function(viewfinderWidth: number, _viewfinderHeight: number) {
+            const width = Math.floor(viewfinderWidth * 0.85);
+            const height = Math.floor(width * 0.3);
             return { width, height };
           },
           aspectRatio: 1.777,
           videoConstraints: {
             width: { ideal: 1920 },
             height: { ideal: 1080 },
-          },
-          experimentalFeatures: {
-            useBarCodeDetectorIfSupported: true
           }
         };
 
@@ -260,14 +209,11 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
           const finalConfig = {
             fps: 30,
             qrbox: function(viewfinderWidth: number, _viewfinderHeight: number) {
-              const width = Math.floor(viewfinderWidth * 0.9);
-              const height = Math.floor(width * 0.35);
+              const width = Math.floor(viewfinderWidth * 0.85);
+              const height = Math.floor(width * 0.3);
               return { width, height };
             },
             aspectRatio: 1.777,
-            experimentalFeatures: {
-              useBarCodeDetectorIfSupported: true
-            }
           };
 
           await scanner.start(
