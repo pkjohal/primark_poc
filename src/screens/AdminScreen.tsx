@@ -27,10 +27,11 @@ export default function AdminScreen() {
   const [alert, setAlert] = useState<{ title: string; message: string; variant: 'success' | 'error' | 'warning' | 'info' } | null>(null);
 
   useEffect(() => {
+    // Always fetch stores (needed for user modal dropdown)
+    // and fetch data based on active tab
+    fetchStores();
     if (activeTab === 'users') {
       fetchUsers();
-    } else {
-      fetchStores();
     }
   }, [activeTab]);
 
