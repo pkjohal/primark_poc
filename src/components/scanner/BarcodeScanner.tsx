@@ -182,12 +182,21 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
   const stopScanner = async () => {
     if (scannerRef.current) {
       try {
-        await scannerRef.current.stop();
+        const currentState = scannerRef.current.getState();
+        if (currentState === 2) { // Scanner is running
+          await scannerRef.current.stop();
+        }
         scannerRef.current.clear();
         scannerRef.current = null;
+        videoTrackRef.current = null;
         setIsScanning(false);
+        setZoomSupported(false);
       } catch (err) {
         console.error('Error stopping scanner:', err);
+        // Force cleanup even if stop fails
+        scannerRef.current = null;
+        videoTrackRef.current = null;
+        setIsScanning(false);
       }
     }
   };
@@ -203,15 +212,79 @@ export default function BarcodeScanner({ onScan, onError, isActive = true }: Bar
   const switchCamera = async () => {
     if (!hasMultipleCameras || availableCameras.length <= 1) return;
 
+    console.log('🔄 Switching camera from index', currentCameraIndex);
+
+    // Stop current scanner
     await stopScanner();
+
+    // Wait for cleanup
+    await new Promise(resolve => setTimeout(resolve, 300));
 
     // Move to next camera
     const nextIndex = (currentCameraIndex + 1) % availableCameras.length;
+    console.log('🔄 Next camera index:', nextIndex, 'Camera:', availableCameras[nextIndex]?.label);
     setCurrentCameraIndex(nextIndex);
-    console.log('🔄 Switching to camera index:', nextIndex);
 
-    // Restart with new camera
-    await initScanner();
+    // Wait for state update
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    // Restart with new camera - need to manually trigger since currentCameraIndex was updated
+    if (!scannerElementRef.current) return;
+
+    try {
+      const scanner = new Html5Qrcode('barcode-scanner');
+      scannerRef.current = scanner;
+
+      const config = {
+        fps: 60,
+        qrbox: function(viewfinderWidth: number, _viewfinderHeight: number) {
+          const width = Math.floor(viewfinderWidth * 0.7);
+          const height = Math.floor(width * 0.35);
+          return { width, height };
+        },
+        aspectRatio: 2.0,
+        videoConstraints: {
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+        },
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+        ]
+      };
+
+      // Use the explicitly selected camera
+      const cameraId = availableCameras[nextIndex].id;
+      console.log('✅ Starting scanner with camera ID:', cameraId);
+
+      await scanner.start(
+        cameraId,
+        config,
+        (decodedText) => {
+          onScan(decodedText);
+        },
+        (errorMessage) => {
+          console.debug('Scan error:', errorMessage);
+        }
+      );
+
+      setIsScanning(true);
+      setError(null);
+
+      // Apply zoom after camera starts
+      setTimeout(() => {
+        checkAndApplyZoom(2.0);
+      }, 500);
+    } catch (err: any) {
+      const errorMsg = err?.message || 'Failed to switch camera';
+      setError(errorMsg);
+      if (onError) onError(errorMsg);
+      console.error('Camera switch error:', err);
+    }
   };
 
   return (
