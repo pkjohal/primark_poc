@@ -12,6 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSessions } from '@/hooks/useSessions';
 import { useSessionItems } from '@/hooks/useSessionItems';
 import { useBackOfHouse } from '@/hooks/useBackOfHouse';
+import { useBaskets } from '@/hooks/useBaskets';
 import { useBarcodeScan } from '@/hooks/useBarcodeScan';
 import { SessionItem } from '@/lib/types';
 
@@ -30,6 +31,7 @@ export default function ExitScanScreen() {
     getUnresolvedItems,
   } = useSessionItems();
   const { addItem: addToBackOfHouse } = useBackOfHouse();
+  const { getOrCreateBasket, addItemToBasket } = useBaskets();
 
   const [step, setStep] = useState<Step>(sessionIdParam ? 'scan_items' : 'scan_tag');
   const [sessionId, setSessionId] = useState<string | null>(sessionIdParam || null);
@@ -150,10 +152,23 @@ export default function ExitScanScreen() {
   };
 
   const handlePurchase = async () => {
-    if (!currentItem) return;
+    if (!currentItem || !sessionId) return;
 
     try {
+      // Get or create basket for this session
+      const basketId = await getOrCreateBasket(sessionId);
+
+      if (!basketId) {
+        setError('Failed to create basket');
+        return;
+      }
+
+      // Mark item as purchased
       await markItemAsPurchased(currentItem.id);
+
+      // Add item to basket
+      await addItemToBasket(currentItem.id, basketId);
+
       setItems(
         items.map((item) =>
           item.id === currentItem.id ? { ...item, status: 'purchased' as const } : item
