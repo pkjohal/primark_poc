@@ -166,9 +166,9 @@ export default function LoginScreen() {
           <h1
             className="font-bold text-primark-blue mb-2"
             style={{
-              fontSize: '28px',
+              fontSize: '46px',
               letterSpacing: '0.2em',
-              fontWeight: 700,
+              fontWeight: 500,
             }}
           >
             PRIMARK
