@@ -320,11 +320,11 @@ export default function ExitScanScreen() {
             <div className="grid grid-cols-2 gap-3">
               <Button onClick={handleRestock} variant="secondary" size="lg" className='inline-flex text-center items-center gap-6'>
                 <Package size={24}/>
-                RESTOCK
+                Restock
               </Button>
               <Button onClick={handlePurchase} variant="success" size="lg" className='inline-flex text-center items-center gap-6'>
                 <ShoppingCart size={24} />
-                PURCHASE
+                Add to Basket
               </Button>
             </div>
           </div>
@@ -350,7 +350,7 @@ export default function ExitScanScreen() {
                   <span className={`text-sm capitalize font-medium ${
                     item.status === 'restocked' ? 'text-primark-blue' : 'text-primark-grey'
                   }`}>
-                    {item.status === 'in_room' ? 'Pending' : item.status}
+                    {item.status === 'in_room' ? 'Pending' : item.status === 'purchased' ? 'Added to Basket' : item.status}
                   </span>
                 </div>
               ))}
