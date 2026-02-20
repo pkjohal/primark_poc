@@ -343,11 +343,13 @@ export default function ExitScanScreen() {
                       ? 'bg-primark-light-grey'
                       : item.status === 'purchased'
                       ? 'bg-green-100'
-                      : 'bg-grey-100'
+                      : 'bg-primark-light-blue border border-primark-blue/30'
                   }`}
                 >
                   <span className="font-medium text-primark-navy">{item.item_barcode}</span>
-                  <span className="text-sm capitalize text-primark-grey">
+                  <span className={`text-sm capitalize font-medium ${
+                    item.status === 'restocked' ? 'text-primark-blue' : 'text-primark-grey'
+                  }`}>
                     {item.status === 'in_room' ? 'Pending' : item.status}
                   </span>
                 </div>
