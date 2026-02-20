@@ -253,7 +253,7 @@ export default function DiscrepancyScreen() {
                   className="inline-flex items-center justify-center gap-2"
                 >
                   <Package size={24} />
-                  RESTOCK
+                  Restock
                 </Button>
                 <Button
                   onClick={handlePurchase}
@@ -262,7 +262,7 @@ export default function DiscrepancyScreen() {
                   className="inline-flex items-center justify-center gap-2"
                 >
                   <ShoppingCart size={24} />
-                  PURCHASE
+                  Add to Basket
                 </Button>
               </div>
             </div>
@@ -418,7 +418,7 @@ export default function DiscrepancyScreen() {
                           }`}>
                             {resolved.resolution === 'lost' ? '✗ LOST' :
                              resolved.resolution === 'restocked' ? '↺ RESTOCK' :
-                             '✓ PURCHASE'}
+                             '✓ Added to Basket'}
                           </span>
                         </div>
                       </div>
