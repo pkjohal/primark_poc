@@ -293,7 +293,7 @@ export default function ExitScanScreen() {
               className="input"
               disabled={loading || !!currentItem}
             />
-            <Button onClick={handleManualEntry} variant="outline" disabled={loading || !!currentItem} className="px-6">
+            <Button onClick={handleManualEntry} variant="outline" disabled={loading || !!currentItem} className="flex items-center justify-center px-6">
               <Keyboard size={20} className="mr-2" />
               Add
             </Button>

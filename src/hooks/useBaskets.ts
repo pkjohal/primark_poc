@@ -9,6 +9,8 @@ interface Basket {
   store_id: string;
   basket_number: number;
   session_id: string;
+  status: 'active' | 'abandoned' | 'transferred';
+  resolved_at: string | null;
   created_at: string;
   updated_at: string;
   session?: {
@@ -54,6 +56,7 @@ export function useBaskets() {
           )
         `)
         .eq('store_id', teamMember.store_id)
+        .eq('status', 'active')
         .order('basket_number', { ascending: false });
 
       if (fetchError) throw fetchError;
@@ -166,6 +169,23 @@ export function useBaskets() {
     }
   };
 
+  // Update basket status (abandoned or transferred)
+  const updateBasketStatus = async (basketId: string, status: 'abandoned' | 'transferred') => {
+    try {
+      const { error: updateError } = await supabase
+        .from('baskets')
+        .update({ status, resolved_at: new Date().toISOString() })
+        .eq('id', basketId);
+
+      if (updateError) throw updateError;
+
+      await fetchBaskets(); // Refresh list — basket disappears because fetch filters active only
+    } catch (err: any) {
+      console.error('Error updating basket status:', err);
+      setError(err.message);
+    }
+  };
+
   // Delete a basket and its item associations
   const deleteBasket = async (basketId: string) => {
     try {
@@ -199,6 +219,7 @@ export function useBaskets() {
     createBasket,
     addItemToBasket,
     getOrCreateBasket,
+    updateBasketStatus,
     deleteBasket,
   };
 }
