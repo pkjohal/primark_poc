@@ -280,7 +280,7 @@ export default function ExitScanScreen() {
         <div className="card">
           <BarcodeScanner
             onScan={step === 'scan_tag' ? handleTagScan.handleScan : handleItemScan.handleScan}
-            isActive={!loading && !currentItem}
+            isActive={!loading && !currentItem && !(step === 'scan_items' && items.length > 0 && resolvedCount === items.length)}
           />
 
           <div className="mt-4 flex gap-2">
