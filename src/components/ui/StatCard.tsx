@@ -1,6 +1,6 @@
 // Stat card component for displaying metrics
 
-import { LucideIcon } from 'lucide-react';
+import { LucideIcon, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface StatCardProps {
@@ -9,10 +9,11 @@ interface StatCardProps {
   icon: LucideIcon;
   color?: 'blue' | 'green' | 'red' | 'amber' | 'grey';
   subtitle?: string;
+  tooltip?: string;
   className?: string;
 }
 
-export default function StatCard({ title, value, icon: Icon, color = 'blue', subtitle, className }: StatCardProps) {
+export default function StatCard({ title, value, icon: Icon, color = 'blue', subtitle, tooltip, className }: StatCardProps) {
   const colorClasses = {
     blue: 'bg-primark-light-blue text-primark-blue',
     green: 'bg-green-100 text-green-600',
@@ -25,7 +26,18 @@ export default function StatCard({ title, value, icon: Icon, color = 'blue', sub
     <div className={cn('card', className)}>
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-sm font-medium text-primark-grey mb-1">{title}</p>
+          <div className="flex items-center gap-1 mb-1">
+            <p className="text-sm font-medium text-primark-grey">{title}</p>
+            {tooltip && (
+              <div className="relative group">
+                <Info size={13} className="text-primark-grey/60 cursor-help" />
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-primark-navy text-white text-xs rounded-lg px-3 py-2 shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none z-20 leading-relaxed">
+                  {tooltip}
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-primark-navy" />
+                </div>
+              </div>
+            )}
+          </div>
           <p className="text-3xl font-bold text-primark-navy">{value}</p>
           {subtitle && <p className="text-xs text-primark-grey mt-1">{subtitle}</p>}
         </div>

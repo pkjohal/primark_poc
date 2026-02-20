@@ -11,6 +11,7 @@ import { useSessions } from '@/hooks/useSessions';
 import { useSessionItems } from '@/hooks/useSessionItems';
 import { useShrinkage } from '@/hooks/useShrinkage';
 import { useBackOfHouse } from '@/hooks/useBackOfHouse';
+import { useBaskets } from '@/hooks/useBaskets';
 import { useBarcodeScan } from '@/hooks/useBarcodeScan';
 import { SessionItem } from '@/lib/types';
 
@@ -27,6 +28,7 @@ export default function DiscrepancyScreen() {
   } = useSessionItems();
   const { logLostItem } = useShrinkage();
   const { addItem: addToBackOfHouse } = useBackOfHouse();
+  const { getOrCreateBasket, addItemToBasket } = useBaskets();
 
   const [unresolvedItems, setUnresolvedItems] = useState<SessionItem[]>([]);
   const [currentItem, setCurrentItem] = useState<SessionItem | null>(null);
@@ -103,10 +105,17 @@ export default function DiscrepancyScreen() {
   });
 
   const handlePurchase = async () => {
-    if (!scannedItem) return;
+    if (!scannedItem || !sessionId) return;
 
     try {
+      const basketId = await getOrCreateBasket(sessionId);
+      if (!basketId) {
+        setError('Failed to create basket');
+        return;
+      }
+
       await markItemAsPurchased(scannedItem.id);
+      await addItemToBasket(scannedItem.id, basketId);
 
       // Add to resolved items
       setResolvedItems(prev => [...prev, {
@@ -253,7 +262,7 @@ export default function DiscrepancyScreen() {
                   className="inline-flex items-center justify-center gap-2"
                 >
                   <Package size={24} />
-                  RESTOCK
+                  Restock
                 </Button>
                 <Button
                   onClick={handlePurchase}
@@ -262,7 +271,7 @@ export default function DiscrepancyScreen() {
                   className="inline-flex items-center justify-center gap-2"
                 >
                   <ShoppingCart size={24} />
-                  PURCHASE
+                  Add to Basket
                 </Button>
               </div>
             </div>
@@ -418,7 +427,7 @@ export default function DiscrepancyScreen() {
                           }`}>
                             {resolved.resolution === 'lost' ? '✗ LOST' :
                              resolved.resolution === 'restocked' ? '↺ RESTOCK' :
-                             '✓ PURCHASE'}
+                             '✓ Added to Basket'}
                           </span>
                         </div>
                       </div>

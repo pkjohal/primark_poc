@@ -1,7 +1,7 @@
 // Baskets screen showing all purchased item baskets
 
 import { useState, useEffect } from 'react';
-import { ShoppingCart, Package, Clock, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { ShoppingCart, Package, Clock, ChevronDown, ChevronUp, Ban, CreditCard, CheckCircle } from 'lucide-react';
 import NavBar from '@/components/layout/NavBar';
 import BottomNav from '@/components/layout/BottomNav';
 import PageHeader from '@/components/layout/PageHeader';
@@ -12,13 +12,15 @@ import { useBaskets } from '@/hooks/useBaskets';
 import { formatElapsedTime } from '@/lib/utils';
 
 export default function BasketsScreen() {
-  const { baskets, loading, fetchBaskets, deleteBasket } = useBaskets();
+  const { baskets, loading, fetchBaskets, updateBasketStatus } = useBaskets();
   const [expandedBaskets, setExpandedBaskets] = useState<Set<string>>(new Set());
-  const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; basketId: string | null; basketNumber: number | null }>({
-    show: false,
-    basketId: null,
-    basketNumber: null,
-  });
+  const [transferredBaskets, setTransferredBaskets] = useState<Set<string>>(new Set());
+  const [actionConfirm, setActionConfirm] = useState<{
+    show: boolean;
+    basketId: string | null;
+    basketNumber: number | null;
+    action: 'delete' | 'abandon' | 'transfer';
+  }>({ show: false, basketId: null, basketNumber: null, action: 'delete' });
 
   useEffect(() => {
     fetchBaskets();
@@ -34,16 +36,50 @@ export default function BasketsScreen() {
     setExpandedBaskets(newExpanded);
   };
 
-  const handleDeleteClick = (basketId: string, basketNumber: number) => {
-    setDeleteConfirm({ show: true, basketId, basketNumber });
+  const handleActionClick = (basketId: string, basketNumber: number, action: 'delete' | 'abandon' | 'transfer') => {
+    setActionConfirm({ show: true, basketId, basketNumber, action });
   };
 
-  const handleDeleteConfirm = async () => {
-    if (deleteConfirm.basketId) {
-      await deleteBasket(deleteConfirm.basketId);
-      setDeleteConfirm({ show: false, basketId: null, basketNumber: null });
+  const handleActionConfirm = async () => {
+    if (!actionConfirm.basketId) return;
+    const basketId = actionConfirm.basketId;
+    setActionConfirm({ show: false, basketId: null, basketNumber: null, action: 'delete' });
+
+    if (actionConfirm.action === 'transfer') {
+      setTransferredBaskets(prev => new Set(prev).add(basketId));
+      setTimeout(async () => {
+        await updateBasketStatus(basketId, 'transferred');
+        setTransferredBaskets(prev => {
+          const next = new Set(prev);
+          next.delete(basketId);
+          return next;
+        });
+      }, 3000);
+    } else {
+      await updateBasketStatus(basketId, 'abandoned');
     }
   };
+
+  const dialogCopy = {
+    delete: {
+      title: 'Delete Basket',
+      message: `Are you sure you want to delete Basket ${actionConfirm.basketNumber}? This will not delete the items, just the basket grouping.`,
+      confirmText: 'Delete',
+      variant: 'danger' as const,
+    },
+    abandon: {
+      title: 'Abandon Basket',
+      message: `Mark Basket ${actionConfirm.basketNumber} as abandoned? It will be removed from the list.`,
+      confirmText: 'Abandon',
+      variant: 'danger' as const,
+    },
+    transfer: {
+      title: 'Transfer to Checkout',
+      message: `Transfer Basket ${actionConfirm.basketNumber} to checkout? It will be removed from the list.`,
+      confirmText: 'Transfer',
+      variant: 'info' as const,
+    },
+  }[actionConfirm.action];
 
   if (loading) {
     return (
@@ -88,14 +124,22 @@ export default function BasketsScreen() {
                 return (
                   <div
                     key={basket.id}
-                    className="border-2 border-primark-grey/30 rounded-lg overflow-hidden hover:border-primark-blue transition-all"
+                    className="relative border-2 border-primark-grey/30 rounded-lg overflow-hidden hover:border-primark-blue transition-all"
                   >
+                    {/* Transfer success overlay */}
+                    {transferredBaskets.has(basket.id) && (
+                      <div className="absolute inset-0 bg-primark-green/90 flex flex-col items-center justify-center z-10 rounded-lg">
+                        <CheckCircle size={52} className="text-white mb-3" />
+                        <p className="text-white font-bold text-lg">Transferred to Checkout</p>
+                      </div>
+                    )}
+
                     {/* Basket Header */}
                     <div
                       className="p-4 bg-white cursor-pointer"
                       onClick={() => toggleBasket(basket.id)}
                     >
-                      <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <ShoppingCart size={20} className="text-primark-blue" />
@@ -115,22 +159,32 @@ export default function BasketsScreen() {
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col items-end gap-2" onClick={(e) => e.stopPropagation()}>
+                          <div className="cursor-pointer" onClick={() => toggleBasket(basket.id)}>
+                            {isExpanded ? (
+                              <ChevronUp size={24} className="text-primark-grey" />
+                            ) : (
+                              <ChevronDown size={24} className="text-primark-grey" />
+                            )}
+                          </div>
                           <Button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteClick(basket.id, basket.basket_number);
-                            }}
-                            variant="danger"
+                            onClick={() => handleActionClick(basket.id, basket.basket_number, 'abandon')}
+                            variant="primary"
                             size="sm"
+                            className='flex items-center justify-center'
                           >
-                            <Trash2 size={16} />
+                            <Ban size={15} className="mr-1.5" />
+                            Abandoned
                           </Button>
-                          {isExpanded ? (
-                            <ChevronUp size={24} className="text-primark-grey" />
-                          ) : (
-                            <ChevronDown size={24} className="text-primark-grey" />
-                          )}
+                          <Button
+                            onClick={() => handleActionClick(basket.id, basket.basket_number, 'transfer')}
+                            variant="success"
+                            size="sm"
+                            className='flex items-center justify-center'
+                          >
+                            <CreditCard size={15} className="mr-1.5" />
+                            Transfer to Checkout
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -185,14 +239,14 @@ export default function BasketsScreen() {
       <BottomNav />
 
       <ConfirmDialog
-        isOpen={deleteConfirm.show}
-        title="Delete Basket"
-        message={`Are you sure you want to delete Basket ${deleteConfirm.basketNumber}? This will not delete the items, just the basket grouping.`}
-        confirmText="Delete"
+        isOpen={actionConfirm.show}
+        title={dialogCopy?.title ?? ''}
+        message={dialogCopy?.message ?? ''}
+        confirmText={dialogCopy?.confirmText ?? 'Confirm'}
         cancelText="Cancel"
-        variant="danger"
-        onConfirm={handleDeleteConfirm}
-        onClose={() => setDeleteConfirm({ show: false, basketId: null, basketNumber: null })}
+        variant={(dialogCopy?.variant ?? 'danger') as 'danger' | 'warning' | 'info'}
+        onConfirm={handleActionConfirm}
+        onClose={() => setActionConfirm({ show: false, basketId: null, basketNumber: null, action: 'delete' })}
       />
     </div>
   );

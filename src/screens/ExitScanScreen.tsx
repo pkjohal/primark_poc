@@ -280,7 +280,7 @@ export default function ExitScanScreen() {
         <div className="card">
           <BarcodeScanner
             onScan={step === 'scan_tag' ? handleTagScan.handleScan : handleItemScan.handleScan}
-            isActive={!loading && !currentItem}
+            isActive={!loading && !currentItem && !(step === 'scan_items' && items.length > 0 && resolvedCount === items.length)}
           />
 
           <div className="mt-4 flex gap-2">
@@ -293,7 +293,7 @@ export default function ExitScanScreen() {
               className="input"
               disabled={loading || !!currentItem}
             />
-            <Button onClick={handleManualEntry} variant="outline" disabled={loading || !!currentItem} className="px-6">
+            <Button onClick={handleManualEntry} variant="outline" disabled={loading || !!currentItem} className="flex items-center justify-center px-6">
               <Keyboard size={20} className="mr-2" />
               Add
             </Button>
@@ -320,11 +320,11 @@ export default function ExitScanScreen() {
             <div className="grid grid-cols-2 gap-3">
               <Button onClick={handleRestock} variant="secondary" size="lg" className='inline-flex text-center items-center gap-6'>
                 <Package size={24}/>
-                RESTOCK
+                Restock
               </Button>
               <Button onClick={handlePurchase} variant="success" size="lg" className='inline-flex text-center items-center gap-6'>
                 <ShoppingCart size={24} />
-                PURCHASE
+                Add to Basket
               </Button>
             </div>
           </div>
@@ -343,12 +343,14 @@ export default function ExitScanScreen() {
                       ? 'bg-primark-light-grey'
                       : item.status === 'purchased'
                       ? 'bg-green-100'
-                      : 'bg-grey-100'
+                      : 'bg-primark-light-blue border border-primark-blue/30'
                   }`}
                 >
                   <span className="font-medium text-primark-navy">{item.item_barcode}</span>
-                  <span className="text-sm capitalize text-primark-grey">
-                    {item.status === 'in_room' ? 'Pending' : item.status}
+                  <span className={`text-sm capitalize font-medium ${
+                    item.status === 'restocked' ? 'text-primark-blue' : 'text-primark-grey'
+                  }`}>
+                    {item.status === 'in_room' ? 'Pending' : item.status === 'purchased' ? 'Added to Basket' : item.status}
                   </span>
                 </div>
               ))}
