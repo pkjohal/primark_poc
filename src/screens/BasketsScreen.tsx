@@ -12,7 +12,7 @@ import { useBaskets } from '@/hooks/useBaskets';
 import { formatElapsedTime } from '@/lib/utils';
 
 export default function BasketsScreen() {
-  const { baskets, loading, fetchBaskets, deleteBasket } = useBaskets();
+  const { baskets, loading, fetchBaskets, updateBasketStatus } = useBaskets();
   const [expandedBaskets, setExpandedBaskets] = useState<Set<string>>(new Set());
   const [transferredBaskets, setTransferredBaskets] = useState<Set<string>>(new Set());
   const [actionConfirm, setActionConfirm] = useState<{
@@ -48,7 +48,7 @@ export default function BasketsScreen() {
     if (actionConfirm.action === 'transfer') {
       setTransferredBaskets(prev => new Set(prev).add(basketId));
       setTimeout(async () => {
-        await deleteBasket(basketId);
+        await updateBasketStatus(basketId, 'transferred');
         setTransferredBaskets(prev => {
           const next = new Set(prev);
           next.delete(basketId);
@@ -56,7 +56,7 @@ export default function BasketsScreen() {
         });
       }, 3000);
     } else {
-      await deleteBasket(basketId);
+      await updateBasketStatus(basketId, 'abandoned');
     }
   };
 
