@@ -1,7 +1,8 @@
 // Manager dashboard with metrics and analytics (Simplified MVP)
 
 import { useState, useEffect } from 'react';
-import { TrendingUp, Users, AlertTriangle, ShoppingCart } from 'lucide-react';
+import { TrendingUp, Users, AlertTriangle, ShoppingCart, CreditCard, Ban } from 'lucide-react';
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import NavBar from '@/components/layout/NavBar';
 import BottomNav from '@/components/layout/BottomNav';
 import PageHeader from '@/components/layout/PageHeader';
@@ -10,7 +11,7 @@ import { useStats } from '@/hooks/useStats';
 import { DashboardStats } from '@/lib/types';
 
 export default function ManagerDashboardScreen() {
-  const { getDashboardStats, loading } = useStats();
+  const { getDashboardStats, getBasketStats, loading } = useStats();
   const [stats, setStats] = useState<DashboardStats>({
     sessionsToday: 0,
     openSessions: 0,
@@ -20,14 +21,16 @@ export default function ManagerDashboardScreen() {
     avgItemsPerSession: 0,
     conversionRate: 0,
   });
+  const [basketStats, setBasketStats] = useState({ transferred: 0, abandoned: 0, transferredToday: 0, abandonedToday: 0 });
 
   useEffect(() => {
     loadStats();
   }, []);
 
   const loadStats = async () => {
-    const data = await getDashboardStats();
-    setStats(data);
+    const [dashData, basketData] = await Promise.all([getDashboardStats(), getBasketStats()]);
+    setStats(dashData);
+    setBasketStats(basketData);
   };
 
   if (loading) {
@@ -66,6 +69,7 @@ export default function ManagerDashboardScreen() {
             value={`${stats.conversionRate.toFixed(1)}%`}
             icon={ShoppingCart}
             color="blue"
+            tooltip="% of items brought into changing rooms that were purchased. Calculated as: items purchased ÷ total items scanned in."
           />
           <StatCard
             title="Shrinkage"
@@ -97,6 +101,70 @@ export default function ManagerDashboardScreen() {
               <p className="text-2xl font-bold text-primark-navy">{stats.backOfHouseCount}</p>
             </div>
           </div>
+        </div>
+
+        {/* Basket Outcomes */}
+        <div className="card mt-4">
+          <h3 className="text-lg font-bold text-primark-navy mb-4">Basket Outcomes</h3>
+          {basketStats.transferred === 0 && basketStats.abandoned === 0 ? (
+            <p className="text-sm text-primark-grey text-center py-6">No basket outcomes recorded yet.</p>
+          ) : (
+            <div className="flex flex-col sm:flex-row items-center gap-6">
+              {/* Donut chart */}
+              <div className="w-full sm:w-1/2 h-52">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Transferred', value: basketStats.transferred },
+                        { name: 'Abandoned', value: basketStats.abandoned },
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius="55%"
+                      outerRadius="80%"
+                      paddingAngle={3}
+                      dataKey="value"
+                    >
+                      <Cell fill="#0DAADB" />
+                      <Cell fill="#F59E0B" />
+                    </Pie>
+                    <Tooltip formatter={(value: number) => [value, 'baskets']} />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Stat breakdown */}
+              <div className="w-full sm:w-1/2 space-y-3">
+                <div className="flex items-center justify-between p-3 bg-primark-light-blue rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <CreditCard size={18} className="text-primark-blue" />
+                    <span className="font-semibold text-primark-navy">Transferred</span>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xl font-bold text-primark-blue">{basketStats.transferred}</p>
+                    <p className="text-xs text-primark-grey">{basketStats.transferredToday} today</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-amber-50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Ban size={18} className="text-primark-amber" />
+                    <span className="font-semibold text-primark-navy">Abandoned</span>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xl font-bold text-primark-amber">{basketStats.abandoned}</p>
+                    <p className="text-xs text-primark-grey">{basketStats.abandonedToday} today</p>
+                  </div>
+                </div>
+                {(basketStats.transferred + basketStats.abandoned) > 0 && (
+                  <p className="text-xs text-primark-grey text-center pt-1">
+                    {Math.round((basketStats.transferred / (basketStats.transferred + basketStats.abandoned)) * 100)}% checkout conversion
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Note */}

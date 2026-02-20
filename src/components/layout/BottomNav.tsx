@@ -1,6 +1,6 @@
 // Bottom navigation for mobile
 
-import { Home, ArrowRightLeft, BarChart3, Settings } from 'lucide-react';
+import { Home, ArrowRightLeft, ShoppingCart, BarChart3, Settings } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
@@ -13,6 +13,7 @@ export default function BottomNav() {
   const navItems = [
     { icon: Home, label: 'Home', path: '/', roles: ['team_member', 'manager', 'admin'] },
     { icon: ArrowRightLeft, label: 'Back of House', path: '/back-of-house', roles: ['team_member', 'manager', 'admin'] },
+    { icon: ShoppingCart, label: 'Baskets', path: '/baskets', roles: ['team_member', 'manager', 'admin'] },
     { icon: BarChart3, label: 'Dashboard', path: '/dashboard', roles: ['manager', 'admin'] },
     { icon: Settings, label: 'Admin', path: '/admin', roles: ['admin'] },
   ];

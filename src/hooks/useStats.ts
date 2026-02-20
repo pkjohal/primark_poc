@@ -194,6 +194,35 @@ export function useStats() {
     }
   };
 
+  const getBasketStats = async () => {
+    const empty = { transferred: 0, abandoned: 0, transferredToday: 0, abandonedToday: 0 };
+    if (!store) return empty;
+
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const { data, error: fetchError } = await supabase
+        .from('baskets')
+        .select('status, resolved_at')
+        .eq('store_id', store.id)
+        .in('status', ['abandoned', 'transferred']);
+
+      if (fetchError) throw fetchError;
+
+      const rows = data || [];
+      return {
+        transferred: rows.filter(b => b.status === 'transferred').length,
+        abandoned: rows.filter(b => b.status === 'abandoned').length,
+        transferredToday: rows.filter(b => b.status === 'transferred' && b.resolved_at && new Date(b.resolved_at) >= today).length,
+        abandonedToday: rows.filter(b => b.status === 'abandoned' && b.resolved_at && new Date(b.resolved_at) >= today).length,
+      };
+    } catch (err: any) {
+      console.error('Error fetching basket stats:', err);
+      return empty;
+    }
+  };
+
   const getHourlyActivity = async (date: Date) => {
     if (!store) return [];
 
@@ -234,6 +263,7 @@ export function useStats() {
     loading,
     error,
     getDashboardStats,
+    getBasketStats,
     getTeamPerformance,
     getHourlyActivity,
   };
